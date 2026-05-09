@@ -1,12 +1,9 @@
 <?php
 
 return [
-    'paths' => ['api/*'], // Allow all API routes
-    'allowed_methods' => ['*'], // Allow all HTTP methods
-    'allowed_origins' => [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000'
-], // Your Next.js frontend
+    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    'allowed_methods' => ['*'],
+    'allowed_origins' => ['http://localhost:3000', 'http://127.0.0.1:3000'],
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['*'],
     'exposed_headers' => [],

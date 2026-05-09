@@ -137,4 +137,36 @@ class AuthController extends Controller
     {
         return response()->json($request->user());
     }
+    public function updateProfile(Request $request)
+{
+    $user = $request->user();
+
+    $request->validate([
+        'name' => 'sometimes|string|max:255',
+        'email' => 'sometimes|email|unique:users,email,' . $user->id,
+        'password' => 'sometimes|string|min:6|confirmed',
+        'telegram_id' => 'sometimes|string|nullable',
+        'telegram_username' => 'sometimes|string|nullable',
+        'gender' => 'sometimes|in:male,female,other|nullable',
+    ]);
+
+    $data = [];
+
+    foreach (['name','email','telegram_id','telegram_username','gender'] as $field) {
+        if ($request->has($field)) {
+            $data[$field] = $request->$field;
+        }
+    }
+
+    if ($request->filled('password')) {
+        $data['password'] = Hash::make($request->password);
+    }
+
+    $user->update($data);
+
+    return response()->json([
+        'message' => 'Profile updated successfully',
+        'user' => $user
+    ]);
+}
 }

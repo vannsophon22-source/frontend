@@ -6,17 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class Property extends Model
 {
-    protected $fillable = [
-        'user_id',
-        'title',
-        'description',
-        'image',
-        'address',
-        'price',
-        'status',
-    ];
+    protected $fillable = ['owner_id','name','description','type','address','city','country','lat','lng','cover_image'];
 
-    public function user(){
-        return $this->belongsTo(User::class);
+    public function units()
+    {
+        return $this->hasMany(Unit::class);
+    }
+
+    public function owner()
+    {
+        return $this->belongsTo(User::class, 'owner_id');
     }
 }
