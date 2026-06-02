@@ -2,115 +2,180 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Http\Controllers\Controller;
 use App\Models\Property;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 
 class PropertyController extends Controller
 {
-    // ================= GET ALL PROPERTIES =================
-    public function index()
-    {
-        $user = auth()->user();
-    
-        $query = Property::with('owner');
-    
-        if ($user->role !== 'admin') {
-            $query->where('owner_id', $user->id);
-        }
-    
-        return response()->json([
-            'properties' => $query->get()
-        ]);
-    }
-    // ================= GET SINGLE PROPERTY =================
-    public function show($id)
-    {
-        $property = Property::with('owner')->find($id);
-
-        if (!$property) {
-            return response()->json([
-                'message' => 'Property not found'
-            ], 404);
-        }
-
-        return response()->json([
-            'property' => $property
-        ]);
-    }
-
-    // ================= CREATE PROPERTY =================
-    public function store(Request $request)
+    /**
+     * GET ALL PROPERTIES
+     */
+    public function index(Request $request)
 {
-    $user = auth()->user();
+    $properties = Property::with(['units', 'propertyType', 'user']) // 'user' is required
+    ->latest()
+    ->get();
+    $query = Property::with(['units', 'propertyType', 'user']);
+    $user = $request->user(); // Use this instead of Auth::user()
 
-    $validated = $request->validate([
-        'name' => 'required|string|max:255',
-        'description' => 'nullable|string',
-        'type' => 'required|string',
-        'address' => 'required|string',
-        'city' => 'required|string',
-        'country' => 'required|string',
-    ]);
-
-    $property = Property::create([
-        'name' => $validated['name'],
-        'description' => $validated['description'] ?? null,
-        'type' => $validated['type'],
-        'address' => $validated['address'],
-        'city' => $validated['city'],
-        'country' => $validated['country'],
-
-        // 🔥 IMPORTANT RULE:
-        // admin can choose owner_id, owner always himself
-        'owner_id' => $user->role === 'admin'
-            ? ($request->owner_id ?? $user->id)
-            : $user->id,
-    ]);
+    // Logic:
+    // 1. If user is logged in AND is not admin -> Filter by user_id
+    // 2. If user is logged in AND is admin -> Do not filter (get all)
+    if ($user && $user->role !== 'admin') {
+        $query->where('user_id', $user->id);
+    } elseif (!$user) {
+        // Optional: Return unauthorized if no token was provided
+        return response()->json(['message' => 'Unauthenticated'], 401);
+    }
+    
+    $properties = $query->latest()->get();
 
     return response()->json([
-        'message' => 'Property created successfully',
-        'property' => $property
-    ], 201);
+        'message' => 'Properties retrieved successfully',
+        'data' => $properties
+    ]);
 }
-
-    // ================= UPDATE PROPERTY (FIXED SAFE VERSION) =================
-    public function update(Request $request, $id)
+    /**
+     * GET SINGLE PROPERTY
+     */
+    public function show($id)
     {
-        $property = Property::find($id);
+        $property = Property::with(['units', 'propertyType', 'user'])
+            ->findOrFail($id);
 
-        if (!$property) {
+        return response()->json([
+            'message' => 'Property detail',
+            'data' => $property
+        ]);
+    }
+
+    /**
+     * CREATE PROPERTY
+     */
+    public function store(Request $request)
+    {
+        // Only admin and owner are allowed access
+        if (!in_array(Auth::user()->role, ['admin', 'owner'])) {
             return response()->json([
-                'message' => 'Property not found'
-            ], 404);
+                'message' => 'Unauthorized'
+            ], 403);
         }
 
         $validated = $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'description' => 'nullable|string',
-            'type' => 'sometimes|string',
-            'address' => 'sometimes|string',
-            'city' => 'sometimes|string',
-            'country' => 'sometimes|string',
+            'name'             => 'required|string',
+            'location'         => 'required|string',
+            'property_type_id' => 'required|exists:property_types,id',
+            'image'            => 'nullable|string',
+            'star_rating'      => 'nullable|numeric',
+            'floor'            => 'nullable|integer',
+            'have_gym'         => 'boolean',
+            'have_swing'       => 'boolean',
+            'have_park'        => 'boolean',
+            'price'            => 'required|numeric',
+            'price_type'       => 'required|in:month,year,day',
+            'has_units'        => 'boolean',
+            'tittle'           => 'required|string',
+            'descrepton'       => 'nullable|string',
+            'bedrooma'         => 'required|string',
+            'has_kitchen'      => 'boolean',
+            'size_house'       => 'nullable|numeric',
+            'bathroom'         => 'required|string',
+
+            // PAYMENT POLICY
+            'payment_policy'   => 'required|in:pay_first,pay_later',
+        ]);
+
+        // Bind property to logged-in owner
+        $validated['user_id'] = Auth::id();
+
+        $property = Property::create($validated);
+
+        return response()->json([
+            'message' => 'Property created successfully',
+            'data' => $property
+        ], 201);
+    }
+
+    /**
+     * UPDATE PROPERTY
+     */
+    public function update(Request $request, $id)
+    {
+        $property = Property::findOrFail($id);
+
+        // Only admin and owner are allowed access
+        if (!in_array(Auth::user()->role, ['admin', 'owner'])) {
+            return response()->json([
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        // Owners can only edit their own properties
+        if (
+            Auth::user()->role !== 'admin' &&
+            $property->user_id !== Auth::id()
+        ) {
+            return response()->json([
+                'message' => 'Not your property'
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'name'             => 'sometimes|string',
+            'location'         => 'sometimes|string',
+            'property_type_id' => 'sometimes|exists:property_types,id',
+            'image'            => 'nullable|string',
+            'star_rating'      => 'nullable|numeric',
+            'floor'            => 'nullable|integer',
+            'have_gym'         => 'boolean',
+            'have_swing'       => 'boolean',
+            'have_park'        => 'boolean',
+            'price'            => 'sometimes|numeric',
+            'price_type'       => 'sometimes|in:month,year,day',
+            'has_units'        => 'boolean',
+            'tittle'           => 'sometimes|string',
+            'descrepton'       => 'nullable|string',
+            'bedrooma'         => 'nullable|string',
+            'has_kitchen'      => 'boolean',
+            'size_house'       => 'nullable|numeric',
+            'bathroom'         => 'nullable|string',
+
+            // PAYMENT POLICY
+            'payment_policy'   => 'sometimes|in:pay_first,pay_later',
         ]);
 
         $property->update($validated);
 
         return response()->json([
             'message' => 'Property updated successfully',
-            'property' => $property
+            'data' => $property
         ]);
     }
 
-    // ================= DELETE PROPERTY =================
+    /**
+     * DELETE PROPERTY
+     */
     public function destroy($id)
     {
-        $property = Property::find($id);
+        $property = Property::findOrFail($id);
 
-        if (!$property) {
+        // Only admin and owner are allowed access
+        if (!in_array(Auth::user()->role, ['admin', 'owner'])) {
             return response()->json([
-                'message' => 'Property not found'
-            ], 404);
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        // Owners can only delete their own properties
+        if (
+            Auth::user()->role !== 'admin' &&
+            $property->user_id !== Auth::id()
+        ) {
+            return response()->json([
+                'message' => 'Not your property'
+            ], 403);
         }
 
         $property->delete();

@@ -12,7 +12,10 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
-        'name',
+        'first_name',
+        'last_name',
+        'telegram_id',
+        'telegram_phone_number',
         'email',
         'password',
         'role',
@@ -21,6 +24,8 @@ class User extends Authenticatable
         'bio',
         'otp',
         'otp_expire_at',
+        'payment_gateway_merchant_id',
+        
     ];
 
     protected $hidden = [
@@ -41,12 +46,6 @@ class User extends Authenticatable
     |--------------------------------------------------------------------------
     */
 
-    // Telegram account (1 user = 1 telegram account)
-    public function telegram()
-    {
-        return $this->hasOne(TelegramAccount::class);
-    }
-
     // Sent messages
     public function sentMessages()
     {
@@ -58,15 +57,7 @@ class User extends Authenticatable
     {
         return $this->hasMany(Message::class, 'receiver_id');
     }
-    public function rooms()
-{
-    return $this->hasMany(Room::class, 'create by');
-}
 
-public function bookings()
-{
-    return $this->hasMany(Booking::class);
-}
 
 public function isAdmin()
 {
