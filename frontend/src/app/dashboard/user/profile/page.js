@@ -40,19 +40,18 @@ export default function ProfilePage() {
 
   // Helper function to get correct avatar URL
   const getAvatarUrl = (avatarPath) => {
-    if (!avatarPath) return "/users/default-avatar.svg";
-    
-    // If it's already a full URL
-    if (avatarPath.startsWith('http')) return avatarPath;
-    
-    // If it's a path from storage
-    if (avatarPath.includes('avatars/')) {
-      return `http://127.0.0.1:8000/storage/${avatarPath}`;
-    }
-    
-    // Default fallback
-    return "/users/default-avatar.svg";
-  };
+  if (!avatarPath) return "/users/default-avatar.svg";
+
+  // Already full URL
+  if (avatarPath.startsWith("http")) return avatarPath;
+
+  const BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "");
+
+  // Remove leading "avatars/" duplication issues
+  const cleanPath = avatarPath.replace(/^\/?storage\//, "").replace(/^\/?avatars\//, "");
+
+  return `${BASE_URL}/storage/avatars/${cleanPath}`;
+};
 
   // Get auth token
   const getToken = () => {
