@@ -16,7 +16,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useUser } from "@/context/UserContext";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend-production-ac2f.up.railway.app/api";
 
 export default function ProfilePage() {
   const router = useRouter();
