@@ -1,511 +1,627 @@
 "use client";
 
-import React, { useState } from "react";
-import OwnerSidebar from "@/components/OwnerSidebar";
-import OwnerHeader from "@/components/OwnerHeader";
-import Link from "next/link";
-import {
-  FiUser,
-  FiMail,
-  FiPhone,
-  FiMapPin,
-  FiCalendar,
-  FiEdit2,
-  FiSave,
-  FiHome,
-  FiCamera,
-  FiLock,
-  FiGlobe,
-  FiBriefcase,
-  FiCheckCircle
-} from "react-icons/fi";
-import Image from "next/image";
+import { useState, useRef, useEffect } from "react";
+import { 
+  Camera, 
+  User, 
+  Mail, 
+  UserCircle, 
+  ChevronLeft, 
+  CheckCircle, 
+  LogOut,
+  MessageCircle,
+  AlertCircle,
+  Loader2
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useUser } from "@/context/UserContext";
 
-export default function OwnerProfilePage() {
-  const [activeTab, setActiveTab] = useState("profile");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
-  
-  // Profile data
-  const [profile, setProfile] = useState({
-    name: "Vann Sophon",
-    email: "vannsophon@email.com",
-    phone: "+855 12 345 678",
-    bio: "Property owner with 5+ years of experience managing rental properties in Phnom Penh. Focused on providing comfortable and affordable housing solutions.",
-    address: "123 Street 271, Chamkarmon, Phnom Penh",
-    joinDate: "January 15, 2020",
-    properties: 8,
-    activeTenants: 12,
-    rating: 4.8,
-    avatar: "/users/user-03.jpg",
-    website: "www.vannsophon-properties.com",
-    company: "Sophon Properties Ltd.",
-    language: "Khmer, English",
-    notifications: true,
-    emailNotifications: true,
-    twoFactorAuth: false
-  });
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
 
-  // Handle form input changes
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setProfile(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-  };
+export default function ProfilePage() {
+  const router = useRouter();
+  const { user, setUser } = useUser();
+  const fileInputRef = useRef(null);
 
-  // Handle save profile
-  const handleSaveProfile = () => {
-    setIsEditing(false);
-    setShowSuccessAlert(true);
+  // State variables
+  const [initialUser, setInitialUser] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState("/users/default-avatar.svg");
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [email, setEmail] = useState("");
+  const [telegramId, setTelegramId] = useState("");
+  const [gender, setGender] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [error, setError] = useState("");
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [firstName, setFirstName] = useState("");
+const [lastName, setLastName] = useState("");
+
+  // Helper function to get correct avatar URL
+  const getAvatarUrl = (avatarPath) => {
+    if (!avatarPath) return "/users/default-avatar.svg";
     
-    // Auto-hide success alert
-    setTimeout(() => {
-      setShowSuccessAlert(false);
-    }, 5000);
+    // If it's already a full URL
+    if (avatarPath.startsWith('http')) return avatarPath;
+    
+    // If it's a path from storage
+    if (avatarPath.includes('avatars/')) {
+      return `http://127.0.0.1:8000/storage/${avatarPath}`;
+    }
+    
+    // Default fallback
+    return "/users/default-avatar.svg";
   };
 
-  // Simulate avatar upload
-  const handleAvatarUpload = () => {
-    setIsUploading(true);
-    // Simulate upload delay
-    setTimeout(() => {
-      setIsUploading(false);
-      // In real app, you would update the avatar URL here
-    }, 1500);
+  // Get auth token
+  const getToken = () => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("token");
   };
+
+  // Update localStorage and context with latest user data
+  const updateLocalStorageAndContext = (updatedUserData) => {
+    // Get current user from localStorage to merge
+    const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+    
+    // Merge with new data
+    const mergedUser = {
+      ...currentUser,
+      ...updatedUserData,
+      updated_at: new Date().toISOString()
+    };
+    
+    // Store in localStorage
+    localStorage.setItem("user", JSON.stringify(mergedUser));
+    
+    // Update context
+    if (setUser) setUser(mergedUser);
+    
+    // Update state
+    setInitialUser(mergedUser);
+    
+    return mergedUser;
+  };
+
+  // Load user from backend using /api/user endpoint
+  const loadUser = async () => {
+    try {
+      const token = getToken();
+      if (!token) {
+        router.push("/login");
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/user`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to load user");
+      }
+
+      const data = await response.json();
+      const userData = data.user || data;
+      
+      // Store the latest version
+      updateLocalStorageAndContext(userData);
+      
+      // Update form fields
+      setFirstName(userData.first_name || "");
+setLastName(userData.last_name || "");
+      setEmail(userData.email || "");
+      setTelegramId(userData.telegram_id || "");
+      setGender(userData.gender || "");
+      
+      // Set avatar preview with correct URL
+      const avatarUrl = getAvatarUrl(userData.avatar);
+      setAvatarPreview(avatarUrl);
+      
+    } catch (err) {
+      console.error("Error loading user:", err);
+      // Fallback to localStorage
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        setInitialUser(parsedUser);
+        setName(parsedUser.name || "");
+        setEmail(parsedUser.email || "");
+        setTelegramId(parsedUser.telegram_id || "");
+        setGender(parsedUser.gender || "");
+        const avatarUrl = getAvatarUrl(parsedUser.avatar);
+        setAvatarPreview(avatarUrl);
+      } else {
+        router.push("/login");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUser();
+  }, [router, setUser]);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (file.size > 5 * 1024 * 1024) {
+      setError("File size must be less than 5MB");
+      return;
+    }
+    
+    if (!file.type.startsWith("image/")) {
+      setError("Please select an image file");
+      return;
+    }
+
+    setError("");
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  };
+
+  // Upload avatar and store latest version
+  const handleAvatarUpload = async () => {
+    if (!avatarFile) {
+      setError("Please select an image first.");
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    setError("");
+
+    try {
+      const token = getToken();
+      const formData = new FormData();
+      formData.append("avatar", avatarFile);
+
+      const response = await fetch(`${API_URL}/user/avatar`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to upload avatar");
+      }
+
+      const data = await response.json();
+      
+      // The avatar path from response
+      const avatarPath = data.avatar || data.avatar_url;
+      const avatarFullUrl = getAvatarUrl(avatarPath);
+      
+      // Store the latest user data with new avatar
+      const updatedUserData = {
+        ...initialUser,
+        avatar: avatarPath,
+        avatar_updated_at: new Date().toISOString()
+      };
+      
+      // Update localStorage and context with latest version
+      const latestUser = updateLocalStorageAndContext(updatedUserData);
+      
+      // Update form state with correct URL
+      setAvatarPreview(avatarFullUrl);
+      setAvatarFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
+      
+      // Refresh user data from backend to ensure sync
+      await loadUser();
+      
+    } catch (err) {
+      setError(err.message || "Failed to upload avatar");
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  // Update profile using PUT /api/user endpoint and store latest version
+  const handleProfileUpdate = async () => {
+    const token = getToken();
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+  
+    // FIX: Check against firstName/lastName instead of the undefined 'name'
+    if (!firstName.trim() || !lastName.trim()) {
+      return setError("First name and Last name are required");
+    }
+  
+    setIsSaving(true);
+    setError("");
+  
+    try {
+      const response = await fetch(`${API_URL}/user`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          first_name: firstName, // Ensure these keys match your Laravel controller
+          last_name: lastName,
+          email: email,
+          telegram_id: telegramId,
+          gender: gender,
+        }),
+      });
+  
+      const data = await response.json();
+  
+      if (!response.ok) {
+        // Handle Laravel validation errors (e.g., 'first_name' field errors)
+        const message = data.errors 
+          ? Object.values(data.errors).flat().join(", ") 
+          : (data.message || "Update failed");
+        throw new Error(message);
+      }
+  
+      const updatedUser = data.user;
+  
+      // Update local storage and context
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      if (setUser) setUser(updatedUser);
+      setInitialUser(updatedUser);
+  
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
+  
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSignOut = () => {
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("authMethod");
+    
+    if (setUser) setUser(null);
+    
+    setTimeout(() => {
+      router.push("/login");
+      router.refresh();
+    }, 500);
+  };
+
+  const confirmSignOut = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0a2a2b] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-16 h-16 text-[#235347] animate-spin mx-auto mb-4" />
+          <p className="text-[#8EB69B]">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!initialUser) {
+    return null;
+  }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-900 text-slate-100">
-
-      {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-y-auto">
-
-        {/* Page content */}
-        <main className="p-6 flex-1 overflow-y-auto bg-gray-50">
-          {/* Success Alert */}
-          {showSuccessAlert && (
-            <div className="mb-6 animate-slide-in">
-              <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg shadow-lg">
-                <div className="flex items-center">
-                  <FiCheckCircle className="h-5 w-5 text-green-500 mr-3" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-green-800">
-                      Profile updated successfully!
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setShowSuccessAlert(false)}
-                    className="text-green-800 hover:text-green-600"
-                  >
-                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                </div>
+    <div className="min-h-screen bg-[#0a2a2b] py-8 px-4">
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#051F20] rounded-2xl shadow-2xl p-8 max-w-md w-full border border-[#235347]/30">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <LogOut className="text-red-400" size={32} />
               </div>
+              <h3 className="text-xl font-bold text-white mb-2">Sign Out</h3>
+              <p className="text-[#8EB69B]">Are you sure you want to sign out?</p>
             </div>
-          )}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 py-3 bg-gray-700 text-white rounded-xl font-medium hover:bg-gray-600 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSignOut}
+                className="flex-1 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl font-medium hover:from-red-600 hover:to-red-700 transition"
+              >
+                Yes, Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-bold text-slate-900">My Profile</h1>
-            {!isEditing ? (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-4 py-2 rounded-lg shadow-md hover:from-blue-700 hover:to-cyan-600 transition-all flex items-center gap-2"
-              >
-                <FiEdit2 className="w-4 h-4" />
-                Edit Profile
-              </button>
-            ) : (
-              <button
-                onClick={handleSaveProfile}
-                className="bg-gradient-to-r from-green-600 to-emerald-500 text-white px-4 py-2 rounded-lg shadow-md hover:from-green-700 hover:to-emerald-600 transition-all flex items-center gap-2"
-              >
-                <FiSave className="w-4 h-4" />
-                Save Changes
-              </button>
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="mb-8 flex items-center justify-between">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-[#8EB69B] hover:text-[#DAF1DE] transition-colors group"
+          >
+            <ChevronLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
+            <span>Back to Dashboard</span>
+          </button>
+          <div className="flex items-center gap-4">
+            {saveSuccess && !showLogoutConfirm && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/30 text-green-400 rounded-lg animate-fade-in">
+                <CheckCircle size={18} />
+                <span className="font-medium">Saved!</span>
+              </div>
             )}
+            <button
+              onClick={confirmSignOut}
+              className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl hover:bg-red-500/20 transition-colors"
+            >
+              <LogOut size={18} />
+              <span>Sign Out</span>
+            </button>
           </div>
+        </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Column - Profile Info & Stats */}
-            <div className="lg:col-span-1 space-y-8">
-              {/* Profile Card */}
-              <div className="bg-white rounded-xl shadow-md overflow-hidden">
-                <div className="p-6">
-                  <div className="flex flex-col items-center">
-                    {/* Avatar */}
-                    <div className="relative mb-6">
-                      <div className="h-32 w-32 rounded-full overflow-hidden border-4 border-white shadow-lg">
-                        <div className="h-full w-full bg-gray-200 flex items-center justify-center">
-                          <FiUser className="w-16 h-16 text-gray-400" />
-                          {/* In real app: <Image src={profile.avatar} alt={profile.name} fill className="object-cover" /> */}
-                        </div>
-                      </div>
-                      {isEditing && (
-                        <button
-                          onClick={handleAvatarUpload}
-                          disabled={isUploading}
-                          className="absolute bottom-2 right-2 bg-blue-600 text-white p-2 rounded-full shadow-lg hover:bg-blue-700 transition-all disabled:opacity-50"
-                        >
-                          {isUploading ? (
-                            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                            </svg>
-                          ) : (
-                            <FiCamera className="h-4 w-4" />
-                          )}
-                        </button>
-                      )}
-                    </div>
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-3 animate-fade-in">
+            <AlertCircle className="text-red-400" size={24} />
+            <div>
+              <span className="text-red-400 font-medium">Error</span>
+              <p className="text-red-300 text-sm mt-1">{error}</p>
+            </div>
+          </div>
+        )}
 
-                    {/* Name & Rating */}
-                    <h2 className="text-xl font-bold text-gray-900 mb-1">
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          name="name"
-                          value={profile.name}
-                          onChange={handleInputChange}
-                          className="text-gray-500 text-center border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                        />
-                      ) : (
-                        profile.name
-                      )}
-                    </h2>
-                    
-                    <div className="flex items-center mb-4">
-                      <div className="flex text-yellow-400 mr-2">
-                        {[...Array(5)].map((_, i) => (
-                          <svg key={i} className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                        ))}
-                      </div>
-                      <span className="text-sm font-medium text-gray-600">{profile.rating}/5.0</span>
-                    </div>
-
-                    {/* Bio */}
-                    <div className="text-center mb-6">
-                      {isEditing ? (
-                        <textarea
-                          name="bio"
-                          value={profile.bio}
-                          onChange={handleInputChange}
-                          rows="3"
-                          className="w-full text-gray-500 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                        />
-                      ) : (
-                        <p className="text-gray-600">{profile.bio}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Contact Info */}
-                  <div className="space-y-4 border-t border-gray-100 pt-6">
-                    <div className="flex items-center">
-                      <FiMail className="w-5 h-5 text-gray-400 mr-3" />
-                      {isEditing ? (
-                        <input
-                          type="email"
-                          name="email"
-                          value={profile.email}
-                          onChange={handleInputChange}
-                          className="flex-1 text-gray-500 border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                        />
-                      ) : (
-                        <span className="text-gray-700">{profile.email}</span>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center">
-                      <FiPhone className="w-5 h-5 text-gray-400 mr-3" />
-                      {isEditing ? (
-                        <input
-                          type="tel"
-                          name="phone"
-                          value={profile.phone}
-                          onChange={handleInputChange}
-                          className="flex-1 text-gray-500 border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                        />
-                      ) : (
-                        <span className="text-gray-700">{profile.phone}</span>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center">
-                      <FiMapPin className="w-5 h-5 text-gray-400 mr-3" />
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          name="address"
-                          value={profile.address}
-                          onChange={handleInputChange}
-                          className="flex-1 text-gray-500 border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                        />
-                      ) : (
-                        <span className="text-gray-700">{profile.address}</span>
-                      )}
-                    </div>
+        <div className="grid md:grid-cols-3 gap-8">
+          {/* Avatar & Info */}
+          <div className="md:col-span-1 bg-[#051F20] rounded-2xl shadow-lg p-6 sticky top-8 border border-[#235347]/30">
+            <div className="text-center mb-6 relative">
+              <div className="relative w-48 h-48 mx-auto rounded-full overflow-hidden border-4 border-[#235347] shadow-xl group">
+                <img 
+                  src={avatarPreview} 
+                  alt="Profile" 
+                  className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300"
+                  onError={(e) => {
+                    console.error('Avatar failed to load:', avatarPreview);
+                    e.target.src = "/users/default-avatar.svg";
+                  }}
+                />
+                <div 
+                  className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 flex items-end justify-center transition-opacity duration-300 pb-4 cursor-pointer"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <div className="flex items-center gap-2 text-white">
+                    <Camera size={20} />
+                    <span className="text-sm font-medium">Change Photo</span>
                   </div>
                 </div>
               </div>
-
-              {/* Stats Card */}
-              <div className="bg-white rounded-xl shadow-md p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">Property Stats</h3>
-                <div className="space-y-6">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-sm text-gray-500">Total Properties</p>
-                      <p className="text-2xl font-bold text-gray-900">{profile.properties}</p>
-                    </div>
-                    <div className="p-3 bg-blue-100 rounded-lg">
-                      <FiHome className="w-6 h-6 text-blue-600" />
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-sm text-gray-500">Active Tenants</p>
-                      <p className="text-2xl font-bold text-gray-900">{profile.activeTenants}</p>
-                    </div>
-                    <div className="p-3 bg-green-100 rounded-lg">
-                      <FiUser className="w-6 h-6 text-green-600" />
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-sm text-gray-500">Member Since</p>
-                      <p className="text-lg font-semibold text-gray-900">{profile.joinDate}</p>
-                    </div>
-                    <div className="p-3 bg-purple-100 rounded-lg">
-                      <FiCalendar className="w-6 h-6 text-purple-600" />
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <input 
+                type="file" 
+                accept="image/*" 
+                className="hidden" 
+                ref={fileInputRef} 
+                onChange={handleFileChange} 
+              />
             </div>
 
-            {/* Right Column - Account Settings */}
-            <div className="lg:col-span-2 space-y-8">
-              {/* Account Settings Card */}
-              <div className="bg-white rounded-xl shadow-md p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">Account Settings</h3>
-                
-                <div className="space-y-8">
-                  {/* Personal Information */}
-                  <div>
-                    <h4 className="text-md font-medium text-gray-900 mb-4">Personal Information</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Company
-                        </label>
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            name="company"
-                            value={profile.company}
-                            onChange={handleInputChange}
-                            className="w-full text-gray-500 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                          />
-                        ) : (
-                          <p className="text-gray-700">{profile.company}</p>
-                        )}
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Website
-                        </label>
-                        {isEditing ? (
-                          <input
-                            type="url"
-                            name="website"
-                            value={profile.website}
-                            onChange={handleInputChange}
-                            className="w-full text-gray-500 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                          />
-                        ) : (
-                          <p className="text-gray-700 flex items-center">
-                            <FiGlobe className="w-4 h-4 mr-2 text-gray-400" />
-                            {profile.website}
-                          </p>
-                        )}
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Languages
-                        </label>
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            name="language"
-                            value={profile.language}
-                            onChange={handleInputChange}
-                            className="w-full text-gray-500 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                          />
-                        ) : (
-                          <p className="text-gray-700">{profile.language}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+            {avatarFile && (
+              <div className="space-y-4 animate-fade-in">
+                <button
+                  onClick={handleAvatarUpload}
+                  disabled={isUploadingAvatar}
+                  className="w-full py-3 px-4 bg-gradient-to-r from-[#235347] to-[#1a3f35] text-white rounded-xl font-semibold hover:scale-[1.02] transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isUploadingAvatar ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Uploading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle size={20} />
+                      <span>Upload New Avatar</span>
+                    </>
+                  )}
+                </button>
+                <p className="text-sm text-[#8EB69B] text-center truncate">
+                  Selected: {avatarFile.name}
+                </p>
+              </div>
+            )}
 
-                  {/* Preferences */}
-                  <div>
-                    <h4 className="text-md font-medium text-gray-900 mb-4">Preferences</h4>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">Push Notifications</p>
-                          <p className="text-sm text-gray-500">Receive push notifications for important updates</p>
-                        </div>
-                        {isEditing ? (
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                              type="checkbox"
-                              name="notifications"
-                              checked={profile.notifications}
-                              onChange={handleInputChange}
-                              className="sr-only peer text-gray-500"
-                            />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                          </label>
-                        ) : (
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${profile.notifications ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                            {profile.notifications ? 'Enabled' : 'Disabled'}
-                          </span>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">Email Notifications</p>
-                          <p className="text-sm text-gray-500">Receive email updates about your properties</p>
-                        </div>
-                        {isEditing ? (
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                              type="checkbox"
-                              name="emailNotifications"
-                              checked={profile.emailNotifications}
-                              onChange={handleInputChange}
-                              className="sr-only peer text-gray-500"
-                            />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                          </label>
-                        ) : (
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${profile.emailNotifications ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                            {profile.emailNotifications ? 'Enabled' : 'Disabled'}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Security */}
-                  <div>
-                    <h4 className="text-md font-medium text-gray-900 mb-4">Security</h4>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">Two-Factor Authentication</p>
-                          <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
-                        </div>
-                        {isEditing ? (
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                              type="checkbox"
-                              name="twoFactorAuth"
-                              checked={profile.twoFactorAuth}
-                              onChange={handleInputChange}
-                              className="sr-only peer text-gray-500"
-                            />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                          </label>
-                        ) : (
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${profile.twoFactorAuth ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                            {profile.twoFactorAuth ? 'Enabled' : 'Disabled'}
-                          </span>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">Change Password</p>
-                          <p className="text-sm text-gray-500">Update your account password</p>
-                        </div>
-                        <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all flex items-center gap-2">
-                          <FiLock className="w-4 h-4" />
-                          Change Password
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+            {/* Account Info - Shows latest stored data */}
+            <div className="mt-8 pt-8 border-t border-[#235347]/30 space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-[#0a2a2b] rounded-lg">
+                <User size={20} className="text-[#8EB69B]" />
+                <div>
+                <div>
+  <p className="text-sm text-[#8EB69B]">Name</p>
+  <p className="font-medium text-white">
+    {initialUser?.first_name || initialUser?.last_name 
+      ? `${initialUser.first_name || ""} ${initialUser.last_name || ""}`.trim() 
+      : "Not set"}
+  </p>
+</div>
                 </div>
               </div>
-
-              {/* Recent Activity Card */}
-              <div className="bg-white rounded-xl shadow-md p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">Recent Activity</h3>
-                <div className="space-y-4">
-                  {[
-                    { action: "Added new property", time: "2 hours ago", type: "property" },
-                    { action: "Updated room pricing", time: "1 day ago", type: "update" },
-                    { action: "Responded to tenant inquiry", time: "2 days ago", type: "message" },
-                    { action: "Scheduled property inspection", time: "3 days ago", type: "schedule" },
-                    { action: "Received payment", time: "1 week ago", type: "payment" }
-                  ].map((activity, index) => (
-                    <div key={index} className="flex items-center py-3 border-b border-gray-100 last:border-0">
-                      <div className={`p-2 rounded-lg mr-4 ${
-                        activity.type === 'property' ? 'bg-blue-100' :
-                        activity.type === 'update' ? 'bg-yellow-100' :
-                        activity.type === 'message' ? 'bg-green-100' :
-                        activity.type === 'schedule' ? 'bg-purple-100' : 'bg-emerald-100'
-                      }`}>
-                        {activity.type === 'property' && <FiHome className="w-4 h-4 text-blue-600" />}
-                        {activity.type === 'update' && <FiEdit2 className="w-4 h-4 text-yellow-600" />}
-                        {activity.type === 'message' && <FiMail className="w-4 h-4 text-green-600" />}
-                        {activity.type === 'schedule' && <FiCalendar className="w-4 h-4 text-purple-600" />}
-                        {activity.type === 'payment' && <FiBriefcase className="w-4 h-4 text-emerald-600" />}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900">{activity.action}</p>
-                        <p className="text-xs text-gray-500">{activity.time}</p>
-                      </div>
-                    </div>
-                  ))}
+              <div className="flex items-center gap-3 p-3 bg-[#0a2a2b] rounded-lg">
+                <Mail size={20} className="text-[#8EB69B]" />
+                <div>
+                  <p className="text-sm text-[#8EB69B]">Email</p>
+                  <p className="font-medium text-white break-all">{initialUser?.email || "Not set"}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-[#0a2a2b] rounded-lg">
+                <MessageCircle size={20} className="text-[#8EB69B]" />
+                <div>
+                  <p className="text-sm text-[#8EB69B]">Telegram ID</p>
+                  <p className="font-medium text-white break-all">{initialUser?.telegram_id || "Not set"}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-[#0a2a2b] rounded-lg">
+                <UserCircle size={20} className="text-[#8EB69B]" />
+                <div>
+                  <p className="text-sm text-[#8EB69B]">Gender</p>
+                  <p className="font-medium text-white capitalize">{initialUser?.gender || "Not specified"}</p>
                 </div>
               </div>
             </div>
           </div>
-        </main>
+
+          {/* Profile Form */}
+          <div className="md:col-span-2 bg-[#051F20] rounded-2xl shadow-lg p-8 border border-[#235347]/30">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-white">Edit Profile</h2>
+              <p className="text-[#8EB69B] mt-2">Update your personal information</p>
+            </div>
+
+            <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+  {/* First Name */}
+  <div>
+    <label className="block text-sm font-medium text-[#8EB69B] mb-2 flex items-center gap-2">
+      <User size={16} />
+      First Name
+    </label>
+    <input
+      value={firstName}
+      onChange={(e) => setFirstName(e.target.value)}
+      className="w-full p-4 bg-[#0a2a2b] border border-[#235347]/40 rounded-xl text-white placeholder-[#8EB69B] focus:outline-none focus:ring-2 focus:ring-[#235347] focus:border-transparent transition"
+      placeholder="First Name"
+    />
+  </div>
+
+  {/* Last Name */}
+  <div>
+    <label className="block text-sm font-medium text-[#8EB69B] mb-2 flex items-center gap-2">
+      <User size={16} />
+      Last Name
+    </label>
+    <input
+      value={lastName}
+      onChange={(e) => setLastName(e.target.value)}
+      className="w-full p-4 bg-[#0a2a2b] border border-[#235347]/40 rounded-xl text-white placeholder-[#8EB69B] focus:outline-none focus:ring-2 focus:ring-[#235347] focus:border-transparent transition"
+      placeholder="Last Name"
+    />
+  </div>
+</div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#8EB69B] mb-2 flex items-center gap-2">
+                  <Mail size={16} className="text-[#8EB69B]" />
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full p-4 bg-[#0a2a2b] border border-[#235347]/40 rounded-xl text-white placeholder-[#8EB69B] focus:outline-none focus:ring-2 focus:ring-[#235347] focus:border-transparent transition"
+                  placeholder="Enter your email address"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#8EB69B] mb-2 flex items-center gap-2">
+                  <MessageCircle size={16} className="text-[#8EB69B]" />
+                  Telegram ID
+                </label>
+                <input
+                  type="text"
+                  value={telegramId}
+                  onChange={(e) => setTelegramId(e.target.value)}
+                  className="w-full p-4 bg-[#0a2a2b] border border-[#235347]/40 rounded-xl text-white placeholder-[#8EB69B] focus:outline-none focus:ring-2 focus:ring-[#235347] focus:border-transparent transition"
+                  placeholder="@username or telegram ID"
+                />
+                <p className="text-sm text-[#8EB69B] mt-2">
+                  Your Telegram username for direct chat notifications
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#8EB69B] mb-2 flex items-center gap-2">
+                  <UserCircle size={16} className="text-[#8EB69B]" />
+                  Gender
+                </label>
+                <select
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value)}
+                  className="w-full p-4 bg-[#0a2a2b] border border-[#235347]/40 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-[#235347] focus:border-transparent transition appearance-none cursor-pointer"
+                >
+                  <option value="">Select your gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+              </div>
+
+              <div className="pt-6 border-t border-[#235347]/30">
+                <button
+                  onClick={handleProfileUpdate}
+                  disabled={isSaving}
+                  className="w-full py-4 px-6 bg-gradient-to-r from-[#235347] to-[#1a3f35] text-white rounded-xl font-semibold hover:scale-[1.02] transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Saving Changes...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle size={20} />
+                      <span>Save Changes</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Add custom animation */}
       <style jsx>{`
-        @keyframes slide-in {
-          from {
-            transform: translateY(-20px);
-            opacity: 0;
+        @keyframes fade-in {
+          from { 
+            opacity: 0; 
+            transform: translateY(-10px); 
           }
-          to {
-            transform: translateY(0);
-            opacity: 1;
+          to { 
+            opacity: 1; 
+            transform: translateY(0); 
           }
         }
-
-        .animate-slide-in {
-          animation: slide-in 0.3s ease-out;
+        .animate-fade-in { 
+          animation: fade-in 0.3s ease-out; 
+        }
+        
+        select {
+          background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%238EB69B' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+          background-position: right 0.5rem center;
+          background-repeat: no-repeat;
+          background-size: 1.5em 1.5em;
+          padding-right: 2.5rem;
+        }
+        
+        select option {
+          background-color: #0a2a2b;
+          color: white;
         }
       `}</style>
     </div>

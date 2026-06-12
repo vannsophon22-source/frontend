@@ -74,19 +74,10 @@ export default function OwnerSidebar({ activeTab, onTabChange, collapsed, onTogg
       badgeColor: 'bg-red-500'
     },
     { 
-      id: 'calendar', 
-      label: 'Calendar', 
-      icon: <Calendar size={20} />, 
-      path: '/dashboard/owner/calendar',
-    },
-    { 
       id: 'messages', 
       label: 'Messages', 
       icon: <MessageSquare size={20} />, 
-      notification: hasUnreadMessages ? 3 : 0,
       path: '/dashboard/owner/messages',
-      badge: hasUnreadMessages ? '3' : null,
-      badgeColor: 'bg-blue-500'
     },
     { 
       id: 'profile', 

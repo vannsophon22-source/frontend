@@ -306,6 +306,8 @@ export const deletePropertyType = (id) =>
   request(`${API_URL}/property-types/${id}`, {
     method: "DELETE",
   });
+
+
 /* =========================================================
    USERS (ADMIN) - FIXED
 ========================================================= */
@@ -450,10 +452,11 @@ export const createUnit = (data) =>
     body: JSON.stringify(data),
   });
 
-export const updateUnit = (id, data) =>
+export const updateUnit = (id, formData) =>
   request(`${API_URL}/units/${id}`, {
     method: "PUT",
-    body: JSON.stringify(data),
+    body: formData,
+    isFormData: true,
   });
 
 export const deleteUnit = (id) =>
