@@ -46,7 +46,7 @@ export default function RegisterPage() {
     setError("");
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/send-otp`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/send-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify({
@@ -79,7 +79,7 @@ export default function RegisterPage() {
     setError("");
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/verify-otp`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify({
