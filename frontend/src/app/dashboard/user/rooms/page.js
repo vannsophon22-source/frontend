@@ -1,11 +1,9 @@
 "use client";
-
 import { useState, useEffect, useMemo } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import RoomCard from "@/components/RoomCard";
 import ChatSidebar from "@/components/ChatSidebar";
-import { fetchPropertiesApi } from "@/utils/api";
 
 export default function RoomsPage() {
   const [roomData, setRoomData] = useState([]);
@@ -17,31 +15,35 @@ export default function RoomsPage() {
 
   useEffect(() => {
     async function loadData() {
-      setLoading(true);
-
       try {
-        const response = await fetchPropertiesApi();
+        setLoading(true);
 
-        // ✅ SAME STRUCTURE AS HOMEPAGE (IMPORTANT FIX)
-        const properties = response?.data?.data || response?.data || [];
+        const res = await fetch(
+          "https://backend-production-ac2f.up.railway.app/api/properties"
+        );
 
+        const json = await res.json();
+
+        const properties = json?.data || [];
+
+        // ✅ FLATTEN UNITS (same logic as homepage)
         const units = properties.flatMap((prop) =>
-          (prop.units || [])
-            .filter(
-              (unit) =>
-                unit.status?.toLowerCase().trim() === "available"
-            )
-            .map((unit) => ({
-              ...unit,
-              title: unit.tittle,
-              property: prop,
-              payment_policy: prop.payment_policy, // ⭐ IMPORTANT FIX
-            }))
+          (prop.units || []).map((unit) => ({
+            id: unit.id,
+            title: unit.tittle || "Untitled Room",
+            image: unit.image,
+            price: unit.price,
+            status: unit.status,
+            location: prop.location,
+            property: prop,
+            unit,
+          }))
         );
 
         setRoomData(units);
       } catch (error) {
         console.error("Failed:", error);
+        setRoomData([]);
       } finally {
         setLoading(false);
       }
@@ -50,29 +52,21 @@ export default function RoomsPage() {
     loadData();
   }, []);
 
-  // Locations
+  // unique locations
   const locations = useMemo(() => {
-    const locs = roomData
-      .map((r) => r.property?.location)
-      .filter(Boolean);
-
+    const locs = roomData.map((r) => r.location).filter(Boolean);
     return ["all", ...new Set(locs)];
   }, [roomData]);
 
-  // Filters
+  // filters
   const filteredRooms = useMemo(() => {
     return roomData.filter((room) => {
       const matchesSearch =
-        room?.title
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        room?.property?.location
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase());
+        room.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        room.location?.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesLocation =
-        locationFilter === "all" ||
-        room?.property?.location === locationFilter;
+        locationFilter === "all" || room.location === locationFilter;
 
       return matchesSearch && matchesLocation;
     });
@@ -80,9 +74,7 @@ export default function RoomsPage() {
 
   return (
     <div className="min-h-screen bg-[#051F20] text-[#DAF1DE]">
-      <Header
-        onMessagesClick={() => setIsChatOpen(!isChatOpen)}
-      />
+      <Header onMessagesClick={() => setIsChatOpen(!isChatOpen)} />
 
       <main className="max-w-7xl mx-auto px-4 pt-32 pb-16">
         {/* HEADER */}
@@ -102,22 +94,16 @@ export default function RoomsPage() {
               type="text"
               placeholder="Search..."
               className="px-6 py-3 rounded-full bg-[#0B2B26] border border-[#235347]"
-              onChange={(e) =>
-                setSearchTerm(e.target.value)
-              }
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
 
             <select
               className="px-6 py-3 rounded-full bg-[#0B2B26] border border-[#235347]"
-              onChange={(e) =>
-                setLocationFilter(e.target.value)
-              }
+              onChange={(e) => setLocationFilter(e.target.value)}
             >
               {locations.map((loc) => (
                 <option key={loc} value={loc}>
-                  {loc === "all"
-                    ? "All Locations"
-                    : loc}
+                  {loc === "all" ? "All Locations" : loc}
                 </option>
               ))}
             </select>
@@ -141,20 +127,25 @@ export default function RoomsPage() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-20">
-            <h3 className="text-2xl font-bold mb-2">
-              No rooms found
-            </h3>
-            <p className="text-[#8EB69B]">
-              Try adjusting filters
-            </p>
+          <div className="text-center py-20 text-[#8EB69B]">
+            No rooms available.
           </div>
         )}
       </main>
 
       <Footer />
 
-      {isChatOpen && <ChatSidebar />}
+      {isChatOpen && (
+        <div className="fixed inset-0 z-[100] flex justify-end">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setIsChatOpen(false)}
+          />
+          <div className="relative w-80 h-full bg-[#051F20] border-l border-[#235347]">
+            <ChatSidebar onClose={() => setIsChatOpen(false)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
