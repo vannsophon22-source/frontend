@@ -20,17 +20,15 @@ useEffect(() => {
     try {
       const response = await fetchPropertiesApi();
 
-      // 🔥 FIX IS HERE
-      const props = response.data?.data || [];
+      // 🔥 SAFE NORMALIZATION (works for ANY API shape)
+      const units =
+        response?.data?.data ||
+        response?.data ||
+        [];
 
-      const allUnits = props.flatMap((prop) =>
-        (prop.units || []).map((unit) => ({
-          ...unit,
-          property: prop,
-        }))
-      );
+      console.log("UNITS FROM API:", units);
 
-      const filteredUnits = allUnits.filter((unit) => {
+      const filteredUnits = units.filter((unit) => {
         const status = String(unit.status || "")
           .trim()
           .toLowerCase();
@@ -40,7 +38,7 @@ useEffect(() => {
 
       setRoomData(filteredUnits);
     } catch (error) {
-      console.error("Failed to fetch properties:", error);
+      console.error("Failed to fetch:", error);
     } finally {
       setLoading(false);
     }
