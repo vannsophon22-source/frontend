@@ -16,7 +16,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useUser } from "@/context/UserContext";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend-production-ac2f.up.railway.app/api";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -27,6 +27,7 @@ export default function ProfilePage() {
   const [initialUser, setInitialUser] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState("/users/default-avatar.svg");
   const [avatarFile, setAvatarFile] = useState(null);
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [telegramId, setTelegramId] = useState("");
   const [gender, setGender] = useState("");
@@ -36,22 +37,20 @@ export default function ProfilePage() {
   const [error, setError] = useState("");
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [firstName, setFirstName] = useState("");
-const [lastName, setLastName] = useState("");
 
   // Helper function to get correct avatar URL
   const getAvatarUrl = (avatarPath) => {
   if (!avatarPath) return "/users/default-avatar.svg";
 
-  // already full URL
+  // Already full URL
   if (avatarPath.startsWith("http")) return avatarPath;
 
-  const base = "https://backend-production-ac2f.up.railway.app/storage/";
+  const BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "");
 
-  // remove duplicate "storage/" if backend already sends it
-  const cleaned = avatarPath.replace(/^storage\//, "");
+  // Remove leading "avatars/" duplication issues
+  const cleanPath = avatarPath.replace(/^\/?storage\//, "").replace(/^\/?avatars\//, "");
 
-  return base + cleaned;
+  return `${BASE_URL}/storage/avatars/${cleanPath}`;
 };
 
   // Get auth token
@@ -111,8 +110,7 @@ const [lastName, setLastName] = useState("");
       updateLocalStorageAndContext(userData);
       
       // Update form fields
-      setFirstName(userData.first_name || "");
-setLastName(userData.last_name || "");
+      setName(userData.name || "");
       setEmail(userData.email || "");
       setTelegramId(userData.telegram_id || "");
       setGender(userData.gender || "");
@@ -235,9 +233,8 @@ setLastName(userData.last_name || "");
       return;
     }
   
-    // FIX: Check against firstName/lastName instead of the undefined 'name'
-    if (!firstName.trim() || !lastName.trim()) {
-      return setError("First name and Last name are required");
+    if (!name.trim()) {
+      return setError("Name is required");
     }
   
     setIsSaving(true);
@@ -249,30 +246,24 @@ setLastName(userData.last_name || "");
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
-          Accept: "application/json",
         },
         body: JSON.stringify({
-          first_name: firstName, // Ensure these keys match your Laravel controller
-          last_name: lastName,
-          email: email,
+          name,
+          email,
           telegram_id: telegramId,
-          gender: gender,
+          gender,
         }),
       });
   
       const data = await response.json();
   
       if (!response.ok) {
-        // Handle Laravel validation errors (e.g., 'first_name' field errors)
-        const message = data.errors 
-          ? Object.values(data.errors).flat().join(", ") 
-          : (data.message || "Update failed");
-        throw new Error(message);
+        throw new Error(data.message || "Update failed");
       }
   
       const updatedUser = data.user;
   
-      // Update local storage and context
+      // Update localStorage and context
       localStorage.setItem("user", JSON.stringify(updatedUser));
       if (setUser) setUser(updatedUser);
       setInitialUser(updatedUser);
@@ -452,14 +443,8 @@ setLastName(userData.last_name || "");
               <div className="flex items-center gap-3 p-3 bg-[#0a2a2b] rounded-lg">
                 <User size={20} className="text-[#8EB69B]" />
                 <div>
-                <div>
-  <p className="text-sm text-[#8EB69B]">Name</p>
-  <p className="font-medium text-white">
-    {initialUser?.first_name || initialUser?.last_name 
-      ? `${initialUser.first_name || ""} ${initialUser.last_name || ""}`.trim() 
-      : "Not set"}
-  </p>
-</div>
+                  <p className="text-sm text-[#8EB69B]">Name</p>
+                  <p className="font-medium text-white">{initialUser?.name || "Not set"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 bg-[#0a2a2b] rounded-lg">
@@ -494,35 +479,18 @@ setLastName(userData.last_name || "");
             </div>
 
             <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-  {/* First Name */}
-  <div>
-    <label className="block text-sm font-medium text-[#8EB69B] mb-2 flex items-center gap-2">
-      <User size={16} />
-      First Name
-    </label>
-    <input
-      value={firstName}
-      onChange={(e) => setFirstName(e.target.value)}
-      className="w-full p-4 bg-[#0a2a2b] border border-[#235347]/40 rounded-xl text-white placeholder-[#8EB69B] focus:outline-none focus:ring-2 focus:ring-[#235347] focus:border-transparent transition"
-      placeholder="First Name"
-    />
-  </div>
-
-  {/* Last Name */}
-  <div>
-    <label className="block text-sm font-medium text-[#8EB69B] mb-2 flex items-center gap-2">
-      <User size={16} />
-      Last Name
-    </label>
-    <input
-      value={lastName}
-      onChange={(e) => setLastName(e.target.value)}
-      className="w-full p-4 bg-[#0a2a2b] border border-[#235347]/40 rounded-xl text-white placeholder-[#8EB69B] focus:outline-none focus:ring-2 focus:ring-[#235347] focus:border-transparent transition"
-      placeholder="Last Name"
-    />
-  </div>
-</div>
+              <div>
+                <label className="block text-sm font-medium text-[#8EB69B] mb-2 flex items-center gap-2">
+                  <User size={16} className="text-[#8EB69B]" />
+                  Full Name
+                </label>
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full p-4 bg-[#0a2a2b] border border-[#235347]/40 rounded-xl text-white placeholder-[#8EB69B] focus:outline-none focus:ring-2 focus:ring-[#235347] focus:border-transparent transition"
+                  placeholder="Enter your full name"
+                />
+              </div>
 
               <div>
                 <label className="block text-sm font-medium text-[#8EB69B] mb-2 flex items-center gap-2">
