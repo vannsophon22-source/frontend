@@ -35,40 +35,56 @@ export default function HomePage() {
     }
     loadData();
   }, []);
-  useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-  
-      try {
-        const response = await fetchPropertiesApi();
-        const props = response.data || [];
-  
-        setProperties(props);
-  
-        const allUnits = props.flatMap((prop) =>
-          (prop.units || []).map((unit) => ({
-            ...unit,
-            property: prop,
-          }))
-        );
-  
-        const filteredUnits = allUnits.filter(
-          (unit) =>
-            unit.status &&
-            unit.status.toString().toLowerCase().trim() === "available"
-        );
-  
-        setRoomData(filteredUnits);
-      } catch (error) {
-        console.error("Failed to fetch properties:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-  
-    loadData();
-  }, []);
+ useEffect(() => {
+  async function loadData() {
+    setLoading(true);
 
+    try {
+      const response = await fetchPropertiesApi();
+      const props = response.data || [];
+
+      console.log("Properties:", props);
+
+      setProperties(props);
+
+      const allUnits = props.flatMap((prop) =>
+        (prop.units || []).map((unit) => ({
+          ...unit,
+          property: prop,
+        }))
+      );
+
+      console.log("All Units:", allUnits);
+
+      allUnits.forEach((unit) => {
+        console.log(
+          `Unit ${unit.id}:`,
+          {
+            name: unit.name,
+            status: unit.status,
+            occupancy_status: unit.occupancy_status,
+          }
+        );
+      });
+
+      const filteredUnits = allUnits.filter(
+        (unit) =>
+          unit.status &&
+          unit.status.toString().toLowerCase().trim() === "available"
+      );
+
+      console.log("Filtered Available Units:", filteredUnits);
+
+      setRoomData(filteredUnits);
+    } catch (error) {
+      console.error("Failed to fetch properties:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  loadData();
+}, []);
   const handleAddFeedback = (e) => {
     e.preventDefault();
     if (!userComment) return;
