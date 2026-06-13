@@ -105,7 +105,7 @@ export default function OwnerHeader({ onSearch, onMenuClick, collapsed }) {
             <div className="relative">
               <div
                 className="flex items-center space-x-2 cursor-pointer"
-                onClick={() => router.push("/dashboard/admin/profile")}
+                onClick={() => router.push("/dashboard/owner/profile")}
               >
                 <img
                   src={avatarUrl}
