@@ -29,7 +29,7 @@ export default function RoomForm({ initialData, onSubmit, isLoading, error }) {
   };
 
   const handleNumberChange = (e) => {
-    setForm({ ...form, [e.target.name]: parseInt(e.target.value) || 0 });
+    setForm({ ...form, [e.target.name]: Number(e.target.value) || 0 });
   };
 
   const addAmenity = () => {
@@ -51,258 +51,98 @@ export default function RoomForm({ initialData, onSubmit, isLoading, error }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    // IMPORTANT: send ONLY occupancy_status (no "status", no "available")
     onSubmit(form);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+
       {error && (
         <div className="p-3 bg-red-500/10 border border-red-500/50 rounded-lg">
           <p className="text-red-400 text-sm">{error}</p>
         </div>
       )}
 
-      {/* Basic Info */}
+      {/* BASIC INFO */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div>
-          <label className="block text-gray-300 text-sm font-medium mb-2">
-            Room Name *
-          </label>
-          <input
-            type="text"
-            name="name"
-            value={form.name}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2.5 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white focus:outline-none focus:border-[#235347]"
-            placeholder="e.g., Cozy Studio with Ocean View"
-          />
-        </div>
 
-        <div>
-          <label className="block text-gray-300 text-sm font-medium mb-2">
-            Room Number
-          </label>
-          <input
-            type="text"
-            name="room_number"
-            value={form.room_number}
-            onChange={handleChange}
-            className="w-full px-4 py-2.5 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white focus:outline-none focus:border-[#235347]"
-            placeholder="e.g., 101, A-12"
-          />
-        </div>
+        <input name="name" value={form.name} onChange={handleChange} placeholder="Room Name" className="input" />
+        <input name="room_number" value={form.room_number} onChange={handleChange} placeholder="Room Number" className="input" />
+
       </div>
 
-      {/* Type and Price */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div>
-          <label className="block text-gray-300 text-sm font-medium mb-2">
-            Room Type *
-          </label>
-          <div className="relative">
-            <FaTag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
-            <select
-              name="type"
-              value={form.type}
-              onChange={handleChange}
-              className="w-full pl-10 pr-4 py-2.5 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white focus:outline-none focus:border-[#235347]"
-            >
-              {roomTypes.map((type) => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+      {/* TYPE + PRICE */}
+      <div className="grid grid-cols-2 gap-5">
 
-        <div>
-          <label className="block text-gray-300 text-sm font-medium mb-2">
-            Monthly Rent ($) *
-          </label>
-          <div className="relative">
-            <FaDollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
-            <input
-              type="number"
-              name="monthly_rent"
-              value={form.monthly_rent}
-              onChange={handleNumberChange}
-              required
-              min="0"
-              step="100"
-              className="w-full pl-10 pr-4 py-2.5 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white focus:outline-none focus:border-[#235347]"
-              placeholder="0.00"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Beds and Baths */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <div>
-          <label className="block text-gray-300 text-sm font-medium mb-2">
-            <FaBed className="inline mr-2" /> Number of Beds
-          </label>
-          <input
-            type="number"
-            name="beds"
-            value={form.beds}
-            onChange={handleNumberChange}
-            min="1"
-            className="w-full px-4 py-2.5 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white focus:outline-none focus:border-[#235347]"
-          />
-        </div>
-
-        <div>
-          <label className="block text-gray-300 text-sm font-medium mb-2">
-            <FaBath className="inline mr-2" /> Number of Baths
-          </label>
-          <input
-            type="number"
-            name="baths"
-            value={form.baths}
-            onChange={handleNumberChange}
-            min="1"
-            className="w-full px-4 py-2.5 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white focus:outline-none focus:border-[#235347]"
-          />
-        </div>
-
-        <div>
-          <label className="block text-gray-300 text-sm font-medium mb-2">
-            <FaRuler className="inline mr-2" /> Size (m²)
-          </label>
-          <input
-            type="text"
-            name="size"
-            value={form.size}
-            onChange={handleChange}
-            className="w-full px-4 py-2.5 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white focus:outline-none focus:border-[#235347]"
-            placeholder="e.g., 45"
-          />
-        </div>
-      </div>
-
-      {/* Location */}
-      <div>
-        <label className="block text-gray-300 text-sm font-medium mb-2">
-          <FaMapMarkerAlt className="inline mr-2" /> Location *
-        </label>
-        <input
-          type="text"
-          name="location"
-          value={form.location}
-          onChange={handleChange}
-          required
-          className="w-full px-4 py-2.5 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white focus:outline-none focus:border-[#235347]"
-          placeholder="City, State or Full Address"
-        />
-      </div>
-
-      {/* Contact Email */}
-      <div>
-        <label className="block text-gray-300 text-sm font-medium mb-2">
-          <FaEnvelope className="inline mr-2" /> Contact Email
-        </label>
-        <input
-          type="email"
-          name="contact_email"
-          value={form.contact_email}
-          onChange={handleChange}
-          className="w-full px-4 py-2.5 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white focus:outline-none focus:border-[#235347]"
-          placeholder="contact@example.com"
-        />
-      </div>
-
-      {/* Description */}
-      <div>
-        <label className="block text-gray-300 text-sm font-medium mb-2">
-          <FaInfoCircle className="inline mr-2" /> Description
-        </label>
-        <textarea
-          name="description"
-          value={form.description}
-          onChange={handleChange}
-          rows={4}
-          className="w-full px-4 py-2.5 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white focus:outline-none focus:border-[#235347] resize-none"
-          placeholder="Describe the room, amenities, neighborhood, etc..."
-        />
-      </div>
-
-      {/* Occupancy Status */}
-      <div>
-        <label className="block text-gray-300 text-sm font-medium mb-2">
-          Occupancy Status
-        </label>
-        <select
-          name="occupancy_status"
-          value={form.occupancy_status}
-          onChange={handleChange}
-          className="w-full px-4 py-2.5 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white focus:outline-none focus:border-[#235347]"
-        >
-          {statuses.map((status) => (
-            <option key={status} value={status}>
-              {status.charAt(0).toUpperCase() + status.slice(1)}
-            </option>
-          ))}
+        <select name="type" value={form.type} onChange={handleChange} className="input">
+          {roomTypes.map(t => <option key={t}>{t}</option>)}
         </select>
+
+        <input
+          type="number"
+          name="monthly_rent"
+          value={form.monthly_rent}
+          onChange={handleNumberChange}
+          placeholder="Rent"
+          className="input"
+        />
+
       </div>
 
-      {/* Amenities */}
+      {/* BEDS + BATHS */}
+      <div className="grid grid-cols-3 gap-5">
+
+        <input type="number" name="beds" value={form.beds} onChange={handleNumberChange} className="input" />
+        <input type="number" name="baths" value={form.baths} onChange={handleNumberChange} className="input" />
+        <input name="size" value={form.size} onChange={handleChange} placeholder="Size m²" className="input" />
+
+      </div>
+
+      {/* LOCATION */}
+      <input name="location" value={form.location} onChange={handleChange} placeholder="Location" className="input" />
+
+      {/* EMAIL */}
+      <input name="contact_email" value={form.contact_email} onChange={handleChange} placeholder="Email" className="input" />
+
+      {/* DESCRIPTION */}
+      <textarea name="description" value={form.description} onChange={handleChange} className="input" />
+
+      {/* OCCUPANCY STATUS (IMPORTANT PART) */}
+      <select
+        name="occupancy_status"
+        value={form.occupancy_status}
+        onChange={handleChange}
+        className="input"
+      >
+        {occupancyStatuses.map(s => (
+          <option key={s} value={s}>{s}</option>
+        ))}
+      </select>
+
+      {/* AMENITIES */}
       <div>
-        <label className="block text-gray-300 text-sm font-medium mb-2">
-          Amenities
-        </label>
-        <div className="flex gap-2 mb-3">
-          <input
-            type="text"
-            value={amenityInput}
-            onChange={(e) => setAmenityInput(e.target.value)}
-            className="flex-1 px-4 py-2 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white focus:outline-none focus:border-[#235347]"
-            placeholder="e.g., WiFi, Parking, AC"
-          />
-          <button
-            type="button"
-            onClick={addAmenity}
-            className="px-4 py-2 bg-[#235347] text-white rounded-lg hover:bg-[#2a7a64]"
-          >
-            Add
-          </button>
+        <div className="flex gap-2">
+          <input value={amenityInput} onChange={(e) => setAmenityInput(e.target.value)} className="input" />
+          <button type="button" onClick={addAmenity}>Add</button>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {form.amenities.map((amenity, idx) => (
-            <span
-              key={idx}
-              className="px-3 py-1 bg-[#235347]/20 text-[#235347] rounded-full text-sm flex items-center gap-2"
-            >
-              {amenity}
-              <button
-                type="button"
-                onClick={() => removeAmenity(amenity)}
-                className="text-red-400 hover:text-red-300"
-              >
-                ×
-              </button>
+
+        <div className="flex gap-2 flex-wrap">
+          {form.amenities.map((a, i) => (
+            <span key={i}>
+              {a}
+              <button type="button" onClick={() => removeAmenity(a)}>×</button>
             </span>
           ))}
         </div>
       </div>
 
-      {/* Submit Button */}
-      <div className="pt-4 border-t border-[#235347]/30">
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full py-3 bg-gradient-to-r from-[#235347] to-[#1a3f35] text-white rounded-lg font-semibold hover:from-[#2a7a64] hover:to-[#235347] transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2"
-        >
-          {isLoading ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              Saving...
-            </>
-          ) : (
-            "Save Room"
-          )}
-        </button>
-      </div>
+      {/* SUBMIT */}
+      <button type="submit" disabled={isLoading}>
+        {isLoading ? "Saving..." : "Save Room"}
+      </button>
+
     </form>
   );
 }
