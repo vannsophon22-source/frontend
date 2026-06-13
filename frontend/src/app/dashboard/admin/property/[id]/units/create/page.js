@@ -101,20 +101,22 @@ export default function CreateUnit() {
       
       // Use correct, standard keys
       formData.append("property_id", propertyId);
-      formData.append("tittle", form.tittle.trim());
+formData.append("tittle", form.tittle);
 
-if (form.description.trim()) {
-  formData.append("descrepton", form.description.trim());
-} // Fixed spelling
-      formData.append("price", form.price);
-      formData.append("price_type", form.price_type);
-      formData.append("status", form.status);
-      
-      if (form.floor) formData.append("floor", form.floor);
-      if (form.residential_water) formData.append("residential_water", form.residential_water);
-      if (form.electricity_prices) formData.append("electricity_prices", form.electricity_prices);
-      if (form.bed) formData.append("bed", form.bed);
-      if (form.max_member) formData.append("max_member", form.max_member);
+if (form.description) {
+  formData.append("description", form.description);
+}
+
+formData.append("price", form.price);
+formData.append("price_type", form.price_type);
+formData.append("status", form.status);
+
+if (form.floor) formData.append("floor", form.floor);
+if (form.residential_water) formData.append("residential_water", form.residential_water);
+if (form.electricity_prices) formData.append("electricity_prices", form.electricity_prices);
+if (form.bed) formData.append("bed", form.bed);
+if (form.max_member) formData.append("max_member", form.max_member);
+if (image) formData.append("image", image);
       if (image) formData.append("image", image);
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/units`, {
@@ -168,7 +170,13 @@ if (form.description.trim()) {
             {/* Title */}
             <div>
               <label className="block text-sm font-medium mb-2">Unit Title *</label>
-              <input type="text" name="tittle" value={form.tittle} onChange={handleChange} required className="w-full px-4 py-2.5 bg-[#0a2a2b] border border-[#235347]/40 rounded-lg focus:outline-none text-white" placeholder="Room 302, Suite A..." />
+              <input
+  type="text"
+  name="tittle"
+  value={form.tittle}
+  onChange={handleChange}
+  required
+ className="w-full px-4 py-2.5 bg-[#0a2a2b] border border-[#235347]/40 rounded-lg focus:outline-none text-white" placeholder="Room 302, Suite A..." />
             </div>
 
             {/* Price configuration Row */}
