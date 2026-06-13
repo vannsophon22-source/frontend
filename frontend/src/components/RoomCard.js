@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 export default function RoomCard({ room, property }) {
   const router = useRouter();
-  const baseUrl = "http://127.0.0.1:8000/storage/";
+  const baseUrl = "https://backend-production-ac2f.up.railway.app/storage/";
 
   const [imgError, setImgError] = useState(false);
   //const [available, setAvailable] = useState(true);
