@@ -233,12 +233,12 @@ export default function RoomForm({ initialData, onSubmit, isLoading, error }) {
           Occupancy Status
         </label>
         <select
-          name="occupancy_status"
-          value={form.occupancy_status}
-          onChange={handleChange}
+  name="status"
+  value={form.status}
+  onChange={handleChange}
           className="w-full px-4 py-2.5 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white focus:outline-none focus:border-[#235347]"
         >
-          {occupancyStatuses.map((status) => (
+          {statuses.map((status) => (
             <option key={status} value={status}>
               {status.charAt(0).toUpperCase() + status.slice(1)}
             </option>
