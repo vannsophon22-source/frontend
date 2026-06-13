@@ -41,19 +41,18 @@ const [lastName, setLastName] = useState("");
 
   // Helper function to get correct avatar URL
   const getAvatarUrl = (avatarPath) => {
-    if (!avatarPath) return "/users/default-avatar.svg";
-    
-    // If it's already a full URL
-    if (avatarPath.startsWith('http')) return avatarPath;
-    
-    // If it's a path from storage
-    if (avatarPath.includes('avatars/')) {
-      return `http://127.0.0.1:8000/storage/${avatarPath}`;
-    }
-    
-    // Default fallback
-    return "/users/default-avatar.svg";
-  };
+  if (!avatarPath) return "/users/default-avatar.svg";
+
+  // already full URL
+  if (avatarPath.startsWith("http")) return avatarPath;
+
+  const base = "https://backend-production-ac2f.up.railway.app/storage/";
+
+  // remove duplicate "storage/" if backend already sends it
+  const cleaned = avatarPath.replace(/^storage\//, "");
+
+  return base + cleaned;
+};
 
   // Get auth token
   const getToken = () => {
