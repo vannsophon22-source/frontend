@@ -2,15 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import {
-  FaUserEdit,
-  FaEnvelope,
-  FaLock,
-  FaUserTag,
-  FaArrowLeft,
-  FaEye,
-  FaEyeSlash,
-} from "react-icons/fa";
+import { FaUserEdit, FaEye, FaEyeSlash, FaArrowLeft } from "react-icons/fa";
 
 export default function EditUser() {
   const router = useRouter();
@@ -19,17 +11,16 @@ export default function EditUser() {
 
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
-
   const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const [formData, setFormData] = useState({
-    name: "",
+    first_name: "",
+    last_name: "",
     email: "",
     password: "",
     role: "user",
   });
-
-  const [errors, setErrors] = useState({});
 
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -48,12 +39,12 @@ export default function EditUser() {
         );
 
         const data = await res.json();
-
         const user = data.users.find((u) => u.id == id);
 
         if (user) {
           setFormData({
-            name: user.name || "",
+            first_name: user.first_name || "",
+            last_name: user.last_name || "",
             email: user.email || "",
             password: "",
             role: user.role || "user",
@@ -81,7 +72,8 @@ export default function EditUser() {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.name.trim()) newErrors.name = "Name required";
+    if (!formData.first_name.trim()) newErrors.first_name = "First name required";
+    if (!formData.last_name.trim()) newErrors.last_name = "Last name required";
     if (!formData.email.trim()) newErrors.email = "Email required";
 
     setErrors(newErrors);
@@ -91,14 +83,14 @@ export default function EditUser() {
   /* ---------------- UPDATE USER ---------------- */
   const handleUpdate = async (e) => {
     e.preventDefault();
-
     if (!validateForm()) return;
 
     setLoading(true);
 
     try {
       const payload = {
-        name: formData.name,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
         email: formData.email,
         role: formData.role,
       };
@@ -130,9 +122,7 @@ export default function EditUser() {
   };
 
   if (fetching) {
-    return (
-      <div className="text-white text-center mt-10">Loading user...</div>
-    );
+    return <div className="text-white text-center mt-10">Loading user...</div>;
   }
 
   return (
@@ -148,99 +138,95 @@ export default function EditUser() {
           Back
         </button>
 
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-gradient-to-br from-[#235347] to-[#1a3f35] rounded-xl">
-            <FaUserEdit className="text-white text-2xl" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-white">Edit User</h1>
-            <p className="text-gray-400 text-sm">Update user information</p>
-          </div>
-        </div>
+        <h1 className="text-2xl font-bold text-white">Edit User</h1>
       </div>
 
       {/* FORM */}
-      <form
-        onSubmit={handleUpdate}
-        className="bg-[#0a2a2b] rounded-xl border border-[#235347]/30 shadow-lg overflow-hidden"
-      >
-        <div className="p-6 space-y-5">
+      <form onSubmit={handleUpdate} className="space-y-5">
 
-          {/* NAME */}
-          <div>
-            <label className="text-gray-300 text-sm">Full Name</label>
-            <input
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              className="w-full mt-1 px-4 py-2 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white"
-            />
-            {errors.name && (
-              <p className="text-red-400 text-xs">{errors.name}</p>
-            )}
-          </div>
-
-          {/* EMAIL */}
-          <div>
-            <label className="text-gray-300 text-sm">Email</label>
-            <input
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="w-full mt-1 px-4 py-2 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white"
-            />
-            {errors.email && (
-              <p className="text-red-400 text-xs">{errors.email}</p>
-            )}
-          </div>
-
-          {/* PASSWORD */}
-          <div>
-            <label className="text-gray-300 text-sm">
-              New Password (optional)
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className="w-full mt-1 px-4 py-2 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white"
-              />
-
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 text-gray-400"
-              >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
-              </button>
-            </div>
-          </div>
-
-          {/* ROLE */}
-          <div>
-            <label className="text-gray-300 text-sm">Role</label>
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              className="w-full mt-1 px-4 py-2 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white"
-            >
-              <option value="user">User</option>
-              <option value="owner">Owner</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-
-          {/* ERROR */}
-          {errors.submit && (
-            <p className="text-red-400 text-sm">{errors.submit}</p>
+        {/* FIRST NAME */}
+        <div>
+          <label className="text-gray-300 text-sm">First Name</label>
+          <input
+            name="first_name"
+            value={formData.first_name}
+            onChange={handleChange}
+            className="w-full mt-1 px-4 py-2 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white"
+          />
+          {errors.first_name && (
+            <p className="text-red-400 text-xs">{errors.first_name}</p>
           )}
         </div>
 
-        {/* ACTIONS */}
-        <div className="px-6 py-4 border-t border-[#235347]/30 flex gap-3">
+        {/* LAST NAME */}
+        <div>
+          <label className="text-gray-300 text-sm">Last Name</label>
+          <input
+            name="last_name"
+            value={formData.last_name}
+            onChange={handleChange}
+            className="w-full mt-1 px-4 py-2 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white"
+          />
+          {errors.last_name && (
+            <p className="text-red-400 text-xs">{errors.last_name}</p>
+          )}
+        </div>
+
+        {/* EMAIL */}
+        <div>
+          <label className="text-gray-300 text-sm">Email</label>
+          <input
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            className="w-full mt-1 px-4 py-2 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white"
+          />
+        </div>
+
+        {/* PASSWORD */}
+        <div>
+          <label className="text-gray-300 text-sm">New Password (optional)</label>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              className="w-full mt-1 px-4 py-2 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white"
+            />
+
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-3 text-gray-400"
+            >
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
+          </div>
+        </div>
+
+        {/* ROLE */}
+        <div>
+          <label className="text-gray-300 text-sm">Role</label>
+          <select
+            name="role"
+            value={formData.role}
+            onChange={handleChange}
+            className="w-full mt-1 px-4 py-2 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white"
+          >
+            <option value="user">User</option>
+            <option value="owner">Owner</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+
+        {/* ERROR */}
+        {errors.submit && (
+          <p className="text-red-400 text-sm">{errors.submit}</p>
+        )}
+
+        {/* BUTTONS */}
+        <div className="flex gap-3 pt-4">
           <button
             type="button"
             onClick={() => router.back()}
