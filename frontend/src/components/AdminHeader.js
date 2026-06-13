@@ -18,14 +18,16 @@ import { useState, useEffect } from "react";
 
 const getAvatarUrl = (avatarPath) => {
   if (!avatarPath) return "/users/default-avatar.svg";
+
+  // already full URL
   if (avatarPath.startsWith("http")) return avatarPath;
-  if (avatarPath.includes("avatars/")) {
-    return `http://127.0.0.1:8000/storage/${avatarPath}`;
-  }
-  if (avatarPath && !avatarPath.includes("/")) {
-    return `http://127.0.0.1:8000/storage/avatars/${avatarPath}`;
-  }
-  return "/users/default-avatar.svg";
+
+  const base = "https://backend-production-ac2f.up.railway.app/storage/";
+
+  // remove duplicate "storage/" if backend already sends it
+  const cleaned = avatarPath.replace(/^storage\//, "");
+
+  return base + cleaned;
 };
 
 export default function OwnerHeader({ onSearch, onMenuClick, collapsed }) {
