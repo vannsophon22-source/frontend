@@ -36,38 +36,36 @@ export default function HomePage() {
     loadData();
   }, []);
   useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-  
-      try {
-        const response = await fetchPropertiesApi();
-        const props = response.data || [];
-  
-        setProperties(props);
-  
-        const allUnits = props.flatMap((prop) =>
-          (prop.units || []).map((unit) => ({
-            ...unit,
-            property: prop,
-          }))
-        );
-  
-        const filteredUnits = allUnits.filter(
-          (unit) =>
-            unit.status &&
-            unit.status.toString().toLowerCase().trim() === "available"
-        );
-  
-        setRoomData(filteredUnits);
-      } catch (error) {
-        console.error("Failed to fetch properties:", error);
-      } finally {
-        setLoading(false);
-      }
+  async function loadData() {
+    setLoading(true);
+
+    try {
+      const response = await fetchPropertiesApi();
+      const props = response.data || [];
+
+      const allUnits = props.flatMap((prop) =>
+        (prop.units || []).map((unit) => ({
+          ...unit,
+          property: prop,
+        }))
+      );
+
+      // ONLY backend field: status
+      const filteredUnits = allUnits.filter(
+        (unit) =>
+          unit.status?.toString().toLowerCase().trim() === "available"
+      );
+
+      setRoomData(filteredUnits);
+    } catch (error) {
+      console.error("Failed to fetch properties:", error);
+    } finally {
+      setLoading(false);
     }
-  
-    loadData();
-  }, []);
+  }
+
+  loadData();
+}, []);
 
   const handleAddFeedback = (e) => {
     e.preventDefault();
