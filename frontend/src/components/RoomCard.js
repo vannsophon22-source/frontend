@@ -8,7 +8,7 @@ export default function RoomCard({ room, property }) {
   const baseUrl = "http://127.0.0.1:8000/storage/";
 
   const [imgError, setImgError] = useState(false);
-  const [available, setAvailable] = useState(true);
+  //const [available, setAvailable] = useState(true);
   const [loadingAvailability, setLoadingAvailability] = useState(true);
 
   const price = Number(room.price ?? 0);
@@ -18,26 +18,36 @@ export default function RoomCard({ room, property }) {
   // ===============================
   // REAL AVAILABILITY CHECK (IMPORTANT)
   // ===============================
-  useEffect(() => {
-    const fetchAvailability = async () => {
-      try {
-        const res = await fetch(
-          `https://backend-production-ac2f.up.railway.app/api/units/${room.id}/availability`
-        );
+  const [available, setAvailable] = useState(true);
+const [loadingAvailability, setLoadingAvailability] = useState(true);
 
-        const data = await res.json();
-        setAvailable(data.available);
-      } catch (err) {
-        // fallback safe mode (avoid false available)
-        setAvailable(false);
-      } finally {
-        setLoadingAvailability(false);
-      }
-    };
+useEffect(() => {
+  const fetchAvailability = async () => {
+    try {
+      const res = await fetch(
+        `https://backend-production-ac2f.up.railway.app/api/units/${room.id}/availability`
+      );
 
-    if (room?.id) fetchAvailability();
-  }, [room?.id]);
+      const data = await res.json();
 
+      const isAvailable =
+        data.available === true ||
+        data.available === 1 ||
+        data.available === "true" ||
+        data.status === "available" ||
+        data.occupancy_status === "available";
+
+      setAvailable(isAvailable);
+    } catch (err) {
+      console.error("Availability Error:", err);
+      setAvailable(false);
+    } finally {
+      setLoadingAvailability(false);
+    }
+  };
+
+  if (room?.id) fetchAvailability();
+}, [room?.id]);
   const isUnavailable = !available;
 
   return (
