@@ -45,13 +45,15 @@ export default function ProfilePage() {
   const getAvatarUrl = (avatarPath) => {
   if (!avatarPath) return "/users/default-avatar.svg";
 
-  if (avatarPath.startsWith("http")) {
-    return avatarPath;
-  }
+  // already full URL
+  if (avatarPath.startsWith("http")) return avatarPath;
 
-  const BASE_URL = process.env.NEXT_PUBLIC_API_URL.replace("/api", "");
+  const base = "https://backend-production-ac2f.up.railway.app/storage/";
 
-  return `${BASE_URL}/storage/${avatarPath}`;
+  // remove duplicate "storage/" if backend already sends it
+  const cleaned = avatarPath.replace(/^storage\//, "");
+
+  return base + cleaned;
 };
 
   // Get auth token
