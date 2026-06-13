@@ -43,10 +43,6 @@ export default function HomePage() {
       const response = await fetchPropertiesApi();
       const props = response.data || [];
 
-      console.log("Properties:", props);
-
-      setProperties(props);
-
       const allUnits = props.flatMap((prop) =>
         (prop.units || []).map((unit) => ({
           ...unit,
@@ -54,26 +50,25 @@ export default function HomePage() {
         }))
       );
 
-      console.log("All Units:", allUnits);
+      const filteredUnits = allUnits.filter((unit) => {
+        const status = (
+          unit.status ||
+          unit.occupancy_status ||
+          unit.available
+        )
+          ?.toString()
+          .toLowerCase()
+          .trim();
 
-      allUnits.forEach((unit) => {
-        console.log(
-          `Unit ${unit.id}:`,
-          {
-            name: unit.name,
-            status: unit.status,
-            occupancy_status: unit.occupancy_status,
-          }
+        return (
+          status === "available" ||
+          status === "1" ||
+          status === "true"
         );
       });
 
-      const filteredUnits = allUnits.filter(
-        (unit) =>
-          unit.status &&
-          unit.status.toString().toLowerCase().trim() === "available"
-      );
-
-      console.log("Filtered Available Units:", filteredUnits);
+      console.log("ALL UNITS:", allUnits);
+      console.log("FILTERED AVAILABLE:", filteredUnits);
 
       setRoomData(filteredUnits);
     } catch (error) {
