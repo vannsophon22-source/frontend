@@ -24,10 +24,10 @@ const getAvatarUrl = (avatarPath) => {
   if (!avatarPath) return "/users/default-avatar.svg";
   if (avatarPath.startsWith("http")) return avatarPath;
   if (avatarPath.includes("avatars/")) {
-    return `http://127.0.0.1:8000/storage/${avatarPath}`;
+    return `https://backend-production-ac2f.up.railway.app/storage/${avatarPath}`;
   }
   if (avatarPath && !avatarPath.includes("/")) {
-    return `http://127.0.0.1:8000/storage/avatars/${avatarPath}`;
+    return `https://backend-production-ac2f.up.railway.app/storage/avatars/${avatarPath}`;
   }
   return "/users/default-avatar.svg";
 };
@@ -108,7 +108,7 @@ export default function Header() {
       setShowSearchResults(true);
       try {
         const response = await fetch(
-          `http://127.0.0.1:8000/api/search?q=${encodeURIComponent(
+          `https://backend-production-ac2f.up.railway.app/api/search?q=${encodeURIComponent(
             searchTerm
           )}`,
           {
