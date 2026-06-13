@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect, useMemo } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -13,36 +14,41 @@ export default function RoomsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [locationFilter, setLocationFilter] = useState("all");
 
+  // =========================
+  // FETCH + NORMALIZE DATA
+  // =========================
   useEffect(() => {
     async function loadData() {
       try {
         setLoading(true);
 
         const res = await fetch(
-          "https://backend-production-ac2f.up.railway.app/api/properties"
+          "https://backend-production-ac2f.up.railway.app/api/units"
         );
 
         const json = await res.json();
 
-        const properties = json?.data || [];
+        console.log("RAW UNITS:", json);
 
-        // ✅ FLATTEN UNITS (same logic as homepage)
-        const units = properties.flatMap((prop) =>
-          (prop.units || []).map((unit) => ({
-            id: unit.id,
-            title: unit.tittle || "Untitled Room",
-            image: unit.image,
-            price: unit.price,
-            status: unit.status,
-            location: prop.location,
-            property: prop,
-            unit,
-          }))
-        );
+        const units = Array.isArray(json)
+          ? json
+          : json?.data?.data
+          ? json.data.data
+          : json?.data || [];
 
-        setRoomData(units);
+        // ✅ NORMALIZE ONCE (IMPORTANT)
+        const normalized = units.map((unit) => ({
+          id: unit.id,
+          title: unit.tittle || "Untitled Room",
+          image: unit.image,
+          price: unit.price,
+          status: unit.status,
+          location: unit.location || "Unknown",
+        }));
+
+        setRoomData(normalized);
       } catch (error) {
-        console.error("Failed:", error);
+        console.error("Fetch error:", error);
         setRoomData([]);
       } finally {
         setLoading(false);
@@ -52,18 +58,24 @@ export default function RoomsPage() {
     loadData();
   }, []);
 
-  // unique locations
+  // =========================
+  // UNIQUE LOCATIONS
+  // =========================
   const locations = useMemo(() => {
     const locs = roomData.map((r) => r.location).filter(Boolean);
     return ["all", ...new Set(locs)];
   }, [roomData]);
 
-  // filters
+  // =========================
+  // FILTER + SEARCH
+  // =========================
   const filteredRooms = useMemo(() => {
+    const search = searchTerm.toLowerCase();
+
     return roomData.filter((room) => {
       const matchesSearch =
-        room.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        room.location?.toLowerCase().includes(searchTerm.toLowerCase());
+        room.title?.toLowerCase().includes(search) ||
+        room.location?.toLowerCase().includes(search);
 
       const matchesLocation =
         locationFilter === "all" || room.location === locationFilter;
@@ -72,11 +84,15 @@ export default function RoomsPage() {
     });
   }, [roomData, searchTerm, locationFilter]);
 
+  // =========================
+  // UI
+  // =========================
   return (
     <div className="min-h-screen bg-[#051F20] text-[#DAF1DE]">
       <Header onMessagesClick={() => setIsChatOpen(!isChatOpen)} />
 
       <main className="max-w-7xl mx-auto px-4 pt-32 pb-16">
+
         {/* HEADER */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
           <div>
@@ -88,11 +104,11 @@ export default function RoomsPage() {
             </p>
           </div>
 
-          {/* SEARCH */}
+          {/* SEARCH + FILTER */}
           <div className="flex flex-col sm:flex-row gap-4">
             <input
               type="text"
-              placeholder="Search..."
+              placeholder="Search rooms..."
               className="px-6 py-3 rounded-full bg-[#0B2B26] border border-[#235347]"
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -135,6 +151,7 @@ export default function RoomsPage() {
 
       <Footer />
 
+      {/* CHAT SIDEBAR */}
       {isChatOpen && (
         <div className="fixed inset-0 z-[100] flex justify-end">
           <div
@@ -149,4 +166,3 @@ export default function RoomsPage() {
     </div>
   );
 }
-check it
