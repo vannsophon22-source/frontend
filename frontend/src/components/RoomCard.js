@@ -19,7 +19,7 @@ setAvailable(isAvailable);
   // ===============================
   // REAL AVAILABILITY CHECK (IMPORTANT)
   // ===============================
- useEffect(() => {
+  useEffect(() => {
   const fetchAvailability = async () => {
     try {
       const res = await fetch(
@@ -28,16 +28,11 @@ setAvailable(isAvailable);
 
       const data = await res.json();
 
-      console.log("API RESPONSE:", data);
+      console.log("Room ID:", room.id);
+      console.log("Room status from homepage:", room.status);
+      console.log("API availability response:", data);
 
-      const isAvailable =
-        data.available === true ||
-        data.available === 1 ||
-        data.available === "true" ||
-        data.status === "available" ||
-        data.occupancy_status === "available";
-
-      setAvailable(isAvailable);
+      setAvailable(Boolean(data.available));
     } catch (err) {
       console.error("Availability Error:", err);
       setAvailable(false);
@@ -46,7 +41,9 @@ setAvailable(isAvailable);
     }
   };
 
-  if (room?.id) fetchAvailability();
+  if (room?.id) {
+    fetchAvailability();
+  }
 }, [room?.id]);
 
   const isUnavailable = !available;
@@ -142,3 +139,5 @@ setAvailable(isAvailable);
     </div>
   );
 }
+
+check why still fail
