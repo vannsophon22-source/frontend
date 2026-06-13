@@ -13,42 +13,41 @@ export default function HomePage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadData() {
-      setLoading(true);
+useEffect(() => {
+  async function loadData() {
+    setLoading(true);
 
-      try {
-        const response = await fetchPropertiesApi();
-        const props = response.data || [];
+    try {
+      const response = await fetchPropertiesApi();
 
-        const allUnits = props.flatMap((prop) =>
-          Array.isArray(prop.units)
-            ? prop.units.map((unit) => ({
-                ...unit,
-                property: prop,
-              }))
-            : []
-        );
+      // 🔥 FIX IS HERE
+      const props = response.data?.data || [];
 
-        const filteredUnits = allUnits.filter((unit) => {
-          const status = String(unit.status ?? "")
-            .trim()
-            .toLowerCase();
+      const allUnits = props.flatMap((prop) =>
+        (prop.units || []).map((unit) => ({
+          ...unit,
+          property: prop,
+        }))
+      );
 
-          return status === "available";
-        });
+      const filteredUnits = allUnits.filter((unit) => {
+        const status = String(unit.status || "")
+          .trim()
+          .toLowerCase();
 
-        setRoomData(filteredUnits);
-      } catch (error) {
-        console.error("Failed to fetch properties:", error);
-      } finally {
-        setLoading(false);
-      }
+        return status === "available";
+      });
+
+      setRoomData(filteredUnits);
+    } catch (error) {
+      console.error("Failed to fetch properties:", error);
+    } finally {
+      setLoading(false);
     }
+  }
 
-    loadData();
-  }, []);
-
+  loadData();
+}, []);
   const handleAddFeedback = (e) => {
     e.preventDefault();
     if (!userComment) return;
