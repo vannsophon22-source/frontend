@@ -12,8 +12,8 @@ export default function RoomCard({ room, property }) {
   const price = Number(room.price ?? 0);
   const title = room.tittle || "Untitled Room";
 
-  // ✅ DIRECT USE (NO API CALL NEEDED)
-  const status = room.status?.toLowerCase()?.trim();
+  // ✅ SINGLE SOURCE OF TRUTH
+  const status = room.status?.toLowerCase();
 
   const isAvailable = status === "available";
   const isUnavailable = !isAvailable;
@@ -44,8 +44,6 @@ export default function RoomCard({ room, property }) {
 
       {/* CONTENT */}
       <div className="p-5 flex flex-col justify-between flex-grow">
-        
-        {/* TITLE */}
         <div>
           <h3
             className={`text-lg font-bold ${
@@ -60,26 +58,21 @@ export default function RoomCard({ room, property }) {
           </p>
         </div>
 
-        {/* PRICE + BUTTONS */}
         <div className="flex flex-col gap-2 mt-4 pt-3 border-t border-white/10">
-
           <span className="text-xl font-black text-white">
             ${price.toFixed(2)}
           </span>
 
-          {/* STATUS */}
           <p className="text-[11px] text-gray-400">
             {isAvailable ? "Available" : "Currently booked"}
           </p>
 
-          {/* BUTTONS */}
           <div className="flex gap-2">
-
             <button
               onClick={() =>
                 router.push(`/dashboard/user/rooms/${room.id}`)
               }
-              className="flex-1 px-3 py-2 text-xs font-bold rounded-lg bg-gray-700 text-white hover:bg-gray-600 transition"
+              className="flex-1 px-3 py-2 text-xs font-bold rounded-lg bg-gray-700 text-white"
             >
               View Details
             </button>
@@ -89,15 +82,14 @@ export default function RoomCard({ room, property }) {
               onClick={() =>
                 router.push(`/dashboard/user/rooms/${room.id}/booking`)
               }
-              className={`flex-1 px-3 py-2 text-xs font-bold rounded-lg transition ${
+              className={`flex-1 px-3 py-2 text-xs font-bold rounded-lg ${
                 isUnavailable
                   ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                  : "bg-green-600 text-white hover:bg-green-700"
+                  : "bg-green-600 text-white"
               }`}
             >
               {isUnavailable ? "Unavailable" : "Book Now"}
             </button>
-
           </div>
         </div>
       </div>
