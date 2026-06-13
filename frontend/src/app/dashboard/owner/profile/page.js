@@ -39,16 +39,18 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Helper function to get correct avatar URL
-  const getAvatarUrl = (avatarPath) => {
+  const BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ||
+  "https://backend-production-ac2f.up.railway.app";
+
+const getAvatarUrl = (avatarPath) => {
   if (!avatarPath) return "/users/default-avatar.svg";
 
-  // Already full URL
   if (avatarPath.startsWith("http")) return avatarPath;
 
-  const BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "");
-
-  // Remove leading "avatars/" duplication issues
-  const cleanPath = avatarPath.replace(/^\/?storage\//, "").replace(/^\/?avatars\//, "");
+  const cleanPath = avatarPath
+    .replace(/^\/?storage\//, "")
+    .replace(/^\/?avatars\//, "");
 
   return `${BASE_URL}/storage/avatars/${cleanPath}`;
 };
