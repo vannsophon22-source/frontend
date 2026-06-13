@@ -3,23 +3,36 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export default function RoomCard({ room, property }) {
+export default function RoomCard({ room }) {
   const router = useRouter();
-  const baseUrl = "https://backend-production-ac2f.up.railway.app/storage/";
+
+  const baseUrl =
+    "https://backend-production-ac2f.up.railway.app/storage/";
 
   const [imgError, setImgError] = useState(false);
 
-  const price = Number(room.price ?? 0);
+  // ---------------------------
+  // SAFE DATA HANDLING
+  // ---------------------------
+
+  const price = Number(room.price) || 0;
+
   const title = room.tittle || "Untitled Room";
 
-  // ✅ SINGLE SOURCE OF TRUTH
   const status = String(room.status || "")
-  .trim()
-  .toLowerCase();
-
+    .trim()
+    .toLowerCase();
 
   const isAvailable = status === "available";
   const isUnavailable = !isAvailable;
+
+  const imageSrc = room.image
+    ? `${baseUrl}${room.image}`
+    : "/no-image.png";
+
+  // ---------------------------
+  // RENDER
+  // ---------------------------
 
   return (
     <div
@@ -33,7 +46,7 @@ export default function RoomCard({ room, property }) {
       <div className="h-48 w-full bg-black">
         {!imgError ? (
           <img
-            src={`${baseUrl}${room.image}`}
+            src={imageSrc}
             alt={title}
             className="w-full h-full object-cover"
             onError={() => setImgError(true)}
@@ -50,14 +63,16 @@ export default function RoomCard({ room, property }) {
         <div>
           <h3
             className={`text-lg font-bold ${
-              isUnavailable ? "text-gray-500 line-through" : "text-white"
+              isUnavailable
+                ? "text-gray-500 line-through"
+                : "text-white"
             }`}
           >
             {title}
           </h3>
 
           <p className="text-xs text-gray-400">
-            {property?.location || "Phnom Penh"}
+            {room.property?.location || "Phnom Penh"}
           </p>
         </div>
 
@@ -67,10 +82,11 @@ export default function RoomCard({ room, property }) {
           </span>
 
           <p className="text-[11px] text-gray-400">
-            {isAvailable ? "Available" : "Currently booked"}
+            {isAvailable ? "Available" : `Status: ${status}`}
           </p>
 
           <div className="flex gap-2">
+            {/* VIEW DETAILS */}
             <button
               onClick={() =>
                 router.push(`/dashboard/user/rooms/${room.id}`)
@@ -80,10 +96,13 @@ export default function RoomCard({ room, property }) {
               View Details
             </button>
 
+            {/* BOOK BUTTON */}
             <button
               disabled={isUnavailable}
               onClick={() =>
-                router.push(`/dashboard/user/rooms/${room.id}/booking`)
+                router.push(
+                  `/dashboard/user/rooms/${room.id}/booking`
+                )
               }
               className={`flex-1 px-3 py-2 text-xs font-bold rounded-lg ${
                 isUnavailable
