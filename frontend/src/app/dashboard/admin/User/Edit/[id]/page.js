@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { FaUserEdit, FaEye, FaEyeSlash, FaArrowLeft } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaArrowLeft } from "react-icons/fa";
 
 export default function EditUser() {
   const router = useRouter();
@@ -32,9 +32,7 @@ export default function EditUser() {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/users`,
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { Authorization: `Bearer ${token}` },
           }
         );
 
@@ -62,25 +60,37 @@ export default function EditUser() {
 
   /* ---------------- HANDLE CHANGE ---------------- */
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+
+    // enforce max length = backend rule
+    if ((name === "first_name" || name === "last_name") && value.length > 25) {
+      return;
+    }
+
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  /* ---------------- VALIDATE ---------------- */
+  /* ---------------- VALIDATION (MATCH BACKEND) ---------------- */
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.first_name.trim()) newErrors.first_name = "First name required";
-    if (!formData.last_name.trim()) newErrors.last_name = "Last name required";
-    if (!formData.email.trim()) newErrors.email = "Email required";
+    if (!formData.first_name.trim())
+      newErrors.first_name = "First name is required";
+
+    if (!formData.last_name.trim())
+      newErrors.last_name = "Last name is required";
+
+    if (!formData.email.trim()) newErrors.email = "Email is required";
+
+    if (formData.password && formData.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  /* ---------------- UPDATE USER ---------------- */
+  /* ---------------- UPDATE ---------------- */
   const handleUpdate = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -122,97 +132,100 @@ export default function EditUser() {
   };
 
   if (fetching) {
-    return <div className="text-white text-center mt-10">Loading user...</div>;
+    return <div className="text-white text-center mt-10">Loading...</div>;
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto text-white">
 
-      {/* HEADER */}
-      <div className="mb-6">
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-gray-400 hover:text-[#235347] mb-4"
-        >
-          <FaArrowLeft />
-          Back
-        </button>
+      {/* BACK */}
+      <button
+        onClick={() => router.back()}
+        className="flex items-center gap-2 text-gray-400 mb-4"
+      >
+        <FaArrowLeft />
+        Back
+      </button>
 
-        <h1 className="text-2xl font-bold text-white">Edit User</h1>
-      </div>
+      <h1 className="text-2xl font-bold mb-6">Edit User</h1>
 
-      {/* FORM */}
-      <form onSubmit={handleUpdate} className="space-y-5">
+      <form onSubmit={handleUpdate} className="space-y-4">
 
         {/* FIRST NAME */}
         <div>
-          <label className="text-gray-300 text-sm">First Name</label>
+          <label>First Name *</label>
           <input
             name="first_name"
             value={formData.first_name}
             onChange={handleChange}
-            className="w-full mt-1 px-4 py-2 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white"
+            className="input"
+            maxLength={25}
           />
           {errors.first_name && (
-            <p className="text-red-400 text-xs">{errors.first_name}</p>
+            <p className="text-red-400 text-sm">{errors.first_name}</p>
           )}
         </div>
 
         {/* LAST NAME */}
         <div>
-          <label className="text-gray-300 text-sm">Last Name</label>
+          <label>Last Name *</label>
           <input
             name="last_name"
             value={formData.last_name}
             onChange={handleChange}
-            className="w-full mt-1 px-4 py-2 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white"
+            className="input"
+            maxLength={25}
           />
           {errors.last_name && (
-            <p className="text-red-400 text-xs">{errors.last_name}</p>
+            <p className="text-red-400 text-sm">{errors.last_name}</p>
           )}
         </div>
 
         {/* EMAIL */}
         <div>
-          <label className="text-gray-300 text-sm">Email</label>
+          <label>Email *</label>
           <input
             name="email"
             value={formData.email}
             onChange={handleChange}
-            className="w-full mt-1 px-4 py-2 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white"
+            className="input"
           />
         </div>
 
         {/* PASSWORD */}
         <div>
-          <label className="text-gray-300 text-sm">New Password (optional)</label>
+          <label>Password (optional)</label>
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
               name="password"
               value={formData.password}
               onChange={handleChange}
-              className="w-full mt-1 px-4 py-2 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white"
+              className="input"
             />
 
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-3 text-gray-400"
+              className="absolute right-3 top-2 text-gray-400"
             >
               {showPassword ? <FaEyeSlash /> : <FaEye />}
             </button>
           </div>
+
+          {errors.password && (
+            <p className="text-red-400 text-sm">{errors.password}</p>
+          )}
         </div>
 
         {/* ROLE */}
         <div>
-          <label className="text-gray-300 text-sm">Role</label>
+          <label>Role *</label>
           <select
             name="role"
             value={formData.role}
             onChange={handleChange}
-            className="w-full mt-1 px-4 py-2 bg-[#051F20] border border-[#235347]/40 rounded-lg text-white"
+            className="input"
           >
             <option value="user">User</option>
             <option value="owner">Owner</option>
@@ -222,27 +235,18 @@ export default function EditUser() {
 
         {/* ERROR */}
         {errors.submit && (
-          <p className="text-red-400 text-sm">{errors.submit}</p>
+          <p className="text-red-400">{errors.submit}</p>
         )}
 
         {/* BUTTONS */}
-        <div className="flex gap-3 pt-4">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="flex-1 bg-gray-700 text-white py-2 rounded-lg"
-          >
-            Cancel
-          </button>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-[#235347] py-2 rounded-lg"
+        >
+          {loading ? "Updating..." : "Update User"}
+        </button>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex-1 bg-[#235347] text-white py-2 rounded-lg"
-          >
-            {loading ? "Updating..." : "Update User"}
-          </button>
-        </div>
       </form>
     </div>
   );
