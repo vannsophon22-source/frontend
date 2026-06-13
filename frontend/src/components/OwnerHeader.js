@@ -18,14 +18,16 @@ import { useState, useEffect } from "react";
 
 const getAvatarUrl = (avatarPath) => {
   if (!avatarPath) return "/users/default-avatar.svg";
+
+  // already full URL
   if (avatarPath.startsWith("http")) return avatarPath;
-  if (avatarPath.includes("avatars/")) {
-    return `http://127.0.0.1:8000/storage/${avatarPath}`;
-  }
-  if (avatarPath && !avatarPath.includes("/")) {
-    return `http://127.0.0.1:8000/storage/avatars/${avatarPath}`;
-  }
-  return "/users/default-avatar.svg";
+
+  const base = "https://backend-production-ac2f.up.railway.app/storage/";
+
+  // remove duplicate "storage/" if backend already sends it
+  const cleaned = avatarPath.replace(/^storage\//, "");
+
+  return base + cleaned;
 };
 
 export default function OwnerHeader({ onSearch, onMenuClick, collapsed }) {
@@ -93,7 +95,7 @@ export default function OwnerHeader({ onSearch, onMenuClick, collapsed }) {
             <div className="flex-1 max-w-md">
               <div className="relative">
                 <div className="flex items-center space-x-3 mb-3 p-2">
-                  <h3 className="text-2xl font-bold text-white">Owner Panel</h3>
+                  <h3 className="text-2xl font-bold text-white">Admin Panel</h3>
                 </div>
               </div>
             </div>
@@ -113,8 +115,8 @@ export default function OwnerHeader({ onSearch, onMenuClick, collapsed }) {
                   className="w-9 h-9 rounded-full border border-neutral-200 dark:border-[#235347] object-cover"
                 />
                 <span className="hidden lg:block text-sm font-medium text-neutral-800 dark:text-[#DAF1DE]">
-  {user.first_name} {user.last_name}
-</span>
+                  {userFullName}
+                </span>
               </div>
             </div>
           </div>
