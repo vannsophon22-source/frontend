@@ -13,7 +13,10 @@ export default function RoomCard({ room, property }) {
   const title = room.tittle || "Untitled Room";
 
   // ✅ SINGLE SOURCE OF TRUTH
-  const status = room.status?.toLowerCase();
+  const status = String(room.status || "")
+  .trim()
+  .toLowerCase();
+
 
   const isAvailable = status === "available";
   const isUnavailable = !isAvailable;
