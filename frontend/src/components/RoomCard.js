@@ -11,7 +11,14 @@ export default function RoomCard({ room, property }) {
   const [imgError, setImgError] = useState(false);
   const [available, setAvailable] = useState(true);
   const [loadingAvailability, setLoadingAvailability] = useState(true);
+const isAvailable =
+  data.available === true ||
+  data.available === 1 ||
+  data.available === "true" ||
+  data.status === "available" ||
+  data.occupancy_status === "available";
 
+setAvailable(isAvailable);
   const price = Number(room.price ?? 0);
   const title = room.tittle || "Untitled Room";
   
