@@ -15,32 +15,34 @@ export default function HomePage() {
 
 useEffect(() => {
   async function loadData() {
-    setLoading(true);
-
     try {
-      const response = await fetchPropertiesApi();
+      setLoading(true);
 
-      // 🔥 SAFE NORMALIZATION (works for ANY API shape)
-      const units =
-        response?.data?.data ||
-        response?.data ||
-        [];
+      console.log("CALLING API...");
 
-      console.log("UNITS FROM API:", units);
+      const res = await fetch(
+        "https://backend-production-ac2f.up.railway.app/api/units"
+      );
 
-      const filteredUnits = units.filter((unit) => {
-        const status = String(unit.status || "")
-          .trim()
-          .toLowerCase();
+      const json = await res.json();
 
-        return status === "available";
-      });
+      console.log("RAW API RESPONSE:", json);
 
-      setRoomData(filteredUnits);
-    } catch (error) {
-      console.error("Failed to fetch:", error);
+      // ✅ SAFE NORMALIZATION (VERY IMPORTANT)
+      const units = Array.isArray(json)
+        ? json
+        : json?.data?.data
+        ? json.data.data
+        : json?.data || [];
+
+      console.log("NORMALIZED UNITS:", units);
+
+      setRoomData(units);
+    } catch (err) {
+      console.error("API ERROR:", err);
+      setRoomData([]);
     } finally {
-      setLoading(false);
+      setLoading(false); // ✅ FIXED
     }
   }
 
