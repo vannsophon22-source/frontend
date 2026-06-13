@@ -14,44 +14,30 @@ export default function RoomsPage() {
   const [locationFilter, setLocationFilter] = useState("all");
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        setLoading(true);
+  async function loadData() {
+    try {
+      setLoading(true);
 
-        const res = await fetch(
-          "https://backend-production-ac2f.up.railway.app/api/properties"
-        );
+      const res = await fetch(
+        "https://backend-production-ac2f.up.railway.app/api/properties"
+      );
 
-        const json = await res.json();
+      const json = await res.json();
+      console.log("API:", json);
 
-        const properties = json?.data || [];
+      const data = json?.data ?? json ?? [];
 
-        // ✅ FLATTEN UNITS (same logic as homepage)
-        const units = properties.flatMap((prop) =>
-          (prop.units || []).map((unit) => ({
-            id: unit.id,
-            title: unit.tittle || "Untitled Room",
-            image: unit.image,
-            price: unit.price,
-            status: unit.status,
-            location: prop.location,
-            property: prop,
-            unit,
-          }))
-        );
-
-        setRoomData(units);
-      } catch (error) {
-        console.error("Failed:", error);
-        setRoomData([]);
-      } finally {
-        setLoading(false);
-      }
+      setRoomData(data);
+    } catch (error) {
+      console.error("Failed:", error);
+      setRoomData([]);
+    } finally {
+      setLoading(false);
     }
+  }
 
-    loadData();
-  }, []);
-
+  loadData();
+}, []);
   // unique locations
   const locations = useMemo(() => {
     const locs = roomData.map((r) => r.location).filter(Boolean);
