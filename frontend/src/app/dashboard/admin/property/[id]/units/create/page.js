@@ -23,7 +23,7 @@ export default function CreateUnit() {
 
   // Reflecting schema parameters accurately
   const [form, setForm] = useState({
-    title: "",
+    tittle: "",
     description: "",
     floor: "",
     status: "available",
@@ -101,8 +101,11 @@ export default function CreateUnit() {
       
       // Use correct, standard keys
       formData.append("property_id", propertyId);
-      formData.append("title", form.title.trim()); 
-      formData.append("description", form.description.trim()); // Fixed spelling
+      formData.append("tittle", form.tittle.trim());
+
+if (form.description.trim()) {
+  formData.append("descrepton", form.description.trim());
+} // Fixed spelling
       formData.append("price", form.price);
       formData.append("price_type", form.price_type);
       formData.append("status", form.status);
@@ -165,7 +168,7 @@ export default function CreateUnit() {
             {/* Title */}
             <div>
               <label className="block text-sm font-medium mb-2">Unit Title *</label>
-              <input type="text" name="title" value={form.title} onChange={handleChange} required className="w-full px-4 py-2.5 bg-[#0a2a2b] border border-[#235347]/40 rounded-lg focus:outline-none text-white" placeholder="Room 302, Suite A..." />
+              <input type="text" name="tittle" value={form.tittle} onChange={handleChange} required className="w-full px-4 py-2.5 bg-[#0a2a2b] border border-[#235347]/40 rounded-lg focus:outline-none text-white" placeholder="Room 302, Suite A..." />
             </div>
 
             {/* Price configuration Row */}
