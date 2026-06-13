@@ -11,12 +11,6 @@ export default function RoomCard({ room, property }) {
   const [imgError, setImgError] = useState(false);
   const [available, setAvailable] = useState(true);
   const [loadingAvailability, setLoadingAvailability] = useState(true);
-const isAvailable =
-  data.available === true ||
-  data.available === 1 ||
-  data.available === "true" ||
-  data.status === "available" ||
-  data.occupancy_status === "available";
 
 setAvailable(isAvailable);
   const price = Number(room.price ?? 0);
@@ -25,7 +19,7 @@ setAvailable(isAvailable);
   // ===============================
   // REAL AVAILABILITY CHECK (IMPORTANT)
   // ===============================
-  useEffect(() => {
+ useEffect(() => {
   const fetchAvailability = async () => {
     try {
       const res = await fetch(
@@ -34,11 +28,16 @@ setAvailable(isAvailable);
 
       const data = await res.json();
 
-      console.log("Room ID:", room.id);
-      console.log("Room status from homepage:", room.status);
-      console.log("API availability response:", data);
+      console.log("API RESPONSE:", data);
 
-      setAvailable(Boolean(data.available));
+      const isAvailable =
+        data.available === true ||
+        data.available === 1 ||
+        data.available === "true" ||
+        data.status === "available" ||
+        data.occupancy_status === "available";
+
+      setAvailable(isAvailable);
     } catch (err) {
       console.error("Availability Error:", err);
       setAvailable(false);
@@ -47,9 +46,7 @@ setAvailable(isAvailable);
     }
   };
 
-  if (room?.id) {
-    fetchAvailability();
-  }
+  if (room?.id) fetchAvailability();
 }, [room?.id]);
 
   const isUnavailable = !available;
