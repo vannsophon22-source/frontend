@@ -95,7 +95,7 @@ export default function OwnerHeader({ onSearch, onMenuClick, collapsed }) {
             <div className="flex-1 max-w-md">
               <div className="relative">
                 <div className="flex items-center space-x-3 mb-3 p-2">
-                  <h3 className="text-2xl font-bold text-white">Admin Panel</h3>
+                  <h3 className="text-2xl font-bold text-white">Owner Panel</h3>
                 </div>
               </div>
             </div>
