@@ -35,51 +35,40 @@ export default function HomePage() {
     }
     loadData();
   }, []);
- useEffect(() => {
-  async function loadData() {
-    setLoading(true);
-
-    try {
-      const response = await fetchPropertiesApi();
-      const props = response.data || [];
-
-      const allUnits = props.flatMap((prop) =>
-        (prop.units || []).map((unit) => ({
-          ...unit,
-          property: prop,
-        }))
-      );
-
-      const filteredUnits = allUnits.filter((unit) => {
-        const status = (
-          unit.status ||
-          unit.occupancy_status ||
-          unit.available
-        )
-          ?.toString()
-          .toLowerCase()
-          .trim();
-
-        return (
-          status === "available" ||
-          status === "1" ||
-          status === "true"
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+  
+      try {
+        const response = await fetchPropertiesApi();
+        const props = response.data || [];
+  
+        setProperties(props);
+  
+        const allUnits = props.flatMap((prop) =>
+          (prop.units || []).map((unit) => ({
+            ...unit,
+            property: prop,
+          }))
         );
-      });
-
-      console.log("ALL UNITS:", allUnits);
-      console.log("FILTERED AVAILABLE:", filteredUnits);
-
-      setRoomData(filteredUnits);
-    } catch (error) {
-      console.error("Failed to fetch properties:", error);
-    } finally {
-      setLoading(false);
+  
+        const filteredUnits = allUnits.filter(
+          (unit) =>
+            unit.status &&
+            unit.status.toString().toLowerCase().trim() === "available"
+        );
+  
+        setRoomData(filteredUnits);
+      } catch (error) {
+        console.error("Failed to fetch properties:", error);
+      } finally {
+        setLoading(false);
+      }
     }
-  }
+  
+    loadData();
+  }, []);
 
-  loadData();
-}, []);
   const handleAddFeedback = (e) => {
     e.preventDefault();
     if (!userComment) return;
