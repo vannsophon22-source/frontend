@@ -5,47 +5,39 @@ import { useEffect, useState } from "react";
 
 export default function RoomCard({ room, property }) {
   const router = useRouter();
-  const baseUrl =
-  "https://backend-production-ac2f.up.railway.app/storage/";
+  const baseUrl = "http://127.0.0.1:8000/storage/";
 
   const [imgError, setImgError] = useState(false);
   const [available, setAvailable] = useState(true);
   const [loadingAvailability, setLoadingAvailability] = useState(true);
 
-setAvailable(isAvailable);
   const price = Number(room.price ?? 0);
   const title = room.tittle || "Untitled Room";
   
+
   // ===============================
   // REAL AVAILABILITY CHECK (IMPORTANT)
   // ===============================
   useEffect(() => {
-  const fetchAvailability = async () => {
-    try {
-      const res = await fetch(
-        `https://backend-production-ac2f.up.railway.app/api/units/${room.id}/availability`
-      );
+    const fetchAvailability = async () => {
+      try {
+        const res = await fetch(
+          `https://backend-production-ac2f.up.railway.app/api/units/${room.id}/availability`
+        );
 
-      const data = await res.json();
+        const data = await res.json();
+        setAvailable(data.available);
+      } catch (err) {
+        // fallback safe mode (avoid false available)
+        setAvailable(false);
+      } finally {
+        setLoadingAvailability(false);
+      }
+    };
 
-      const isAvailable =
-        data.available === true ||
-        data.available === 1 ||
-        data.available === "true" ||
-        data.status === "available" ||
-        data.occupancy_status === "available";
+    if (room?.id) fetchAvailability();
+  }, [room?.id]);
 
-      setAvailable(isAvailable);
-    } catch (err) {
-      console.error("Availability Error:", err);
-      setAvailable(false);
-    } finally {
-      setLoadingAvailability(false);
-    }
-  };
-
-  if (room?.id) fetchAvailability();
-}, [room?.id]);
   const isUnavailable = !available;
 
   return (
@@ -139,5 +131,3 @@ setAvailable(isAvailable);
     </div>
   );
 }
-
-check why still fail
