@@ -1,54 +1,22 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export default function RoomCard({ room, property }) {
   const router = useRouter();
   const baseUrl = "https://backend-production-ac2f.up.railway.app/storage/";
 
   const [imgError, setImgError] = useState(false);
-  //const [available, setAvailable] = useState(true);
-  const [loadingAvailability, setLoadingAvailability] = useState(true);
 
   const price = Number(room.price ?? 0);
   const title = room.tittle || "Untitled Room";
-  
 
-  // ===============================
-  // REAL AVAILABILITY CHECK (IMPORTANT)
-  // ===============================
-  const [available, setAvailable] = useState(true);
-const [loadingAvailability, setLoadingAvailability] = useState(true);
+  // ✅ DIRECT USE (NO API CALL NEEDED)
+  const status = room.status?.toLowerCase()?.trim();
 
-useEffect(() => {
-  const fetchAvailability = async () => {
-    try {
-      const res = await fetch(
-        `https://backend-production-ac2f.up.railway.app/api/units/${room.id}/availability`
-      );
-
-      const data = await res.json();
-
-      const isAvailable =
-        data.available === true ||
-        data.available === 1 ||
-        data.available === "true" ||
-        data.status === "available" ||
-        data.occupancy_status === "available";
-
-      setAvailable(isAvailable);
-    } catch (err) {
-      console.error("Availability Error:", err);
-      setAvailable(false);
-    } finally {
-      setLoadingAvailability(false);
-    }
-  };
-
-  if (room?.id) fetchAvailability();
-}, [room?.id]);
-  const isUnavailable = !available;
+  const isAvailable = status === "available";
+  const isUnavailable = !isAvailable;
 
   return (
     <div
@@ -59,7 +27,7 @@ useEffect(() => {
       }`}
     >
       {/* IMAGE */}
-      <div className="h-48 w-full relative bg-black">
+      <div className="h-48 w-full bg-black">
         {!imgError ? (
           <img
             src={`${baseUrl}${room.image}`}
@@ -76,6 +44,7 @@ useEffect(() => {
 
       {/* CONTENT */}
       <div className="p-5 flex flex-col justify-between flex-grow">
+        
         {/* TITLE */}
         <div>
           <h3
@@ -100,17 +69,12 @@ useEffect(() => {
 
           {/* STATUS */}
           <p className="text-[11px] text-gray-400">
-            {loadingAvailability
-              ? "Checking availability..."
-              : isUnavailable
-              ? "Currently booked"
-              : "Available"}
+            {isAvailable ? "Available" : "Currently booked"}
           </p>
 
           {/* BUTTONS */}
           <div className="flex gap-2">
 
-            {/* VIEW DETAILS */}
             <button
               onClick={() =>
                 router.push(`/dashboard/user/rooms/${room.id}`)
@@ -120,7 +84,6 @@ useEffect(() => {
               View Details
             </button>
 
-            {/* BOOK NOW */}
             <button
               disabled={isUnavailable}
               onClick={() =>
