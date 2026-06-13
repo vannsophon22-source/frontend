@@ -9,23 +9,19 @@ export default function RoomForm({
   error,
 }) {
   const [form, setForm] = useState({
-    name: initialData?.name || "",
-    room_number: initialData?.room_number || "",
-    type: initialData?.type || "Single",
-    monthly_rent: initialData?.monthly_rent || "",
-    beds: initialData?.beds || 1,
-    baths: initialData?.baths || 1,
-    size: initialData?.size || "",
-    description: initialData?.description || "",
-    location: initialData?.location || "",
-    contact_email: initialData?.contact_email || "",
-    amenities: initialData?.amenities || [],
-
-    // MUST MATCH BACKEND
+    property_id: initialData?.property_id || "",
+    tittle: initialData?.tittle || "",
+    descrepton: initialData?.descrepton || "",
+    floor: initialData?.floor || "",
+    price_type: initialData?.price_type || "month",
+    price: initialData?.price || 0,
+    residential_water: initialData?.residential_water || "",
+    electricity_prices: initialData?.electricity_prices || "",
+    bed: initialData?.bed || 1,
+    max_member: initialData?.max_member || 1,
     status: initialData?.status || "available",
+    image: null,
   });
-
-  const [amenityInput, setAmenityInput] = useState("");
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -38,175 +34,116 @@ export default function RoomForm({
     });
   };
 
-  const addAmenity = () => {
-    if (
-      amenityInput.trim() &&
-      !form.amenities.includes(amenityInput.trim())
-    ) {
-      setForm({
-        ...form,
-        amenities: [...form.amenities, amenityInput.trim()],
-      });
-      setAmenityInput("");
-    }
-  };
-
-  const removeAmenity = (amenity) => {
+  const handleFileChange = (e) => {
     setForm({
       ...form,
-      amenities: form.amenities.filter((a) => a !== amenity),
+      image: e.target.files[0],
     });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    onSubmit({
-      ...form,
-      status: form.status,
+    const data = new FormData();
+
+    Object.keys(form).forEach((key) => {
+      if (form[key] !== null && form[key] !== undefined) {
+        data.append(key, form[key]);
+      }
     });
+
+    onSubmit(data);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+
       {error && (
         <div className="p-3 bg-red-500/10 border border-red-500/50 rounded-lg">
           <p className="text-red-400 text-sm">{error}</p>
         </div>
       )}
 
-      {/* BASIC INFO */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <input
-          name="name"
-          value={form.name}
-          onChange={handleChange}
-          placeholder="Room Name"
-          className="input"
-        />
-        <input
-          name="room_number"
-          value={form.room_number}
-          onChange={handleChange}
-          placeholder="Room Number"
-          className="input"
-        />
-      </div>
-
-      {/* TYPE + PRICE */}
-      <div className="grid grid-cols-2 gap-5">
-        <select
-          name="type"
-          value={form.type}
-          onChange={handleChange}
-          className="input"
-        >
-          {["Single", "Double", "Studio", "Suite"].map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
-
-        <input
-          type="number"
-          name="monthly_rent"
-          value={form.monthly_rent}
-          onChange={handleNumberChange}
-          placeholder="Rent"
-          className="input"
-        />
-      </div>
-
-      {/* BEDS + BATHS */}
-      <div className="grid grid-cols-3 gap-5">
-        <input
-          type="number"
-          name="beds"
-          value={form.beds}
-          onChange={handleNumberChange}
-          className="input"
-        />
-        <input
-          type="number"
-          name="baths"
-          value={form.baths}
-          onChange={handleNumberChange}
-          className="input"
-        />
-        <input
-          name="size"
-          value={form.size}
-          onChange={handleChange}
-          placeholder="Size m²"
-          className="input"
-        />
-      </div>
-
-      {/* LOCATION */}
+      {/* TITLE */}
       <input
-        name="location"
-        value={form.location}
+        name="tittle"
+        value={form.tittle}
         onChange={handleChange}
-        placeholder="Location"
-        className="input"
-      />
-
-      {/* EMAIL */}
-      <input
-        name="contact_email"
-        value={form.contact_email}
-        onChange={handleChange}
-        placeholder="Email"
+        placeholder="Room Title"
         className="input"
       />
 
       {/* DESCRIPTION */}
       <textarea
-        name="description"
-        value={form.description}
+        name="descrepton"
+        value={form.descrepton}
         onChange={handleChange}
+        placeholder="Description"
         className="input"
       />
 
-      {/* STATUS (FIXED) */}
+      {/* PRICE + TYPE */}
+      <div className="grid grid-cols-2 gap-5">
+        <input
+          type="number"
+          name="price"
+          value={form.price}
+          onChange={handleNumberChange}
+          placeholder="Price"
+          className="input"
+        />
+
+        <select
+          name="price_type"
+          value={form.price_type}
+          onChange={handleChange}
+          className="input"
+        >
+          <option value="day">Day</option>
+          <option value="month">Month</option>
+          <option value="year">Year</option>
+        </select>
+      </div>
+
+      {/* BED + MAX */}
+      <div className="grid grid-cols-2 gap-5">
+        <input
+          type="number"
+          name="bed"
+          value={form.bed}
+          onChange={handleNumberChange}
+          className="input"
+          placeholder="Beds"
+        />
+
+        <input
+          type="number"
+          name="max_member"
+          value={form.max_member}
+          onChange={handleNumberChange}
+          className="input"
+          placeholder="Max Members"
+        />
+      </div>
+
+      {/* STATUS */}
       <select
         name="status"
         value={form.status}
         onChange={handleChange}
         className="input"
       >
-        {["available", "unavailable"].map((s) => (
-          <option key={s} value={s}>
-            {s}
-          </option>
-        ))}
+        <option value="available">Available</option>
+        <option value="unavailable">Unavailable</option>
       </select>
 
-      {/* AMENITIES */}
-      <div>
-        <div className="flex gap-2">
-          <input
-            value={amenityInput}
-            onChange={(e) => setAmenityInput(e.target.value)}
-            className="input"
-          />
-          <button type="button" onClick={addAmenity}>
-            Add
-          </button>
-        </div>
-
-        <div className="flex gap-2 flex-wrap">
-          {form.amenities.map((a, i) => (
-            <span key={i}>
-              {a}
-              <button type="button" onClick={() => removeAmenity(a)}>
-                ×
-              </button>
-            </span>
-          ))}
-        </div>
-      </div>
+      {/* IMAGE */}
+      <input
+        type="file"
+        name="image"
+        onChange={handleFileChange}
+        className="input"
+      />
 
       {/* SUBMIT */}
       <button type="submit" disabled={isLoading}>
