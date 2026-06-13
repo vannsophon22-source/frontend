@@ -11,15 +11,12 @@ import {
   LogOut,
   MessageCircle,
   AlertCircle,
-  Loader2,
-  Shield,
-  Building,
-  Key,
-  Calendar
+  Loader2
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/context/UserContext";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend-production-ac2f.up.railway.app/api";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -45,15 +42,15 @@ export default function ProfilePage() {
   const getAvatarUrl = (avatarPath) => {
   if (!avatarPath) return "/users/default-avatar.svg";
 
-  // already full URL
+  // Already full URL
   if (avatarPath.startsWith("http")) return avatarPath;
 
-  const base = "https://backend-production-ac2f.up.railway.app/storage/";
+  const BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "");
 
-  // remove duplicate "storage/" if backend already sends it
-  const cleaned = avatarPath.replace(/^storage\//, "");
+  // Remove leading "avatars/" duplication issues
+  const cleanPath = avatarPath.replace(/^\/?storage\//, "").replace(/^\/?avatars\//, "");
 
-  return base + cleaned;
+  return `${BASE_URL}/storage/avatars/${cleanPath}`;
 };
 
   // Get auth token
@@ -88,69 +85,60 @@ export default function ProfilePage() {
 
   // Load user from backend using /api/user endpoint
   const loadUser = async () => {
-  try {
-    const token = getToken();
-    if (!token) {
-      router.push("/login");
-      return;
-    }
+    try {
+      const token = getToken();
+      if (!token) {
+        router.push("/login");
+        return;
+      }
 
-    const response = await fetch(`${API_URL}/user`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/json",
-      },
-    });
+      const response = await fetch(`${API_URL}/user`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
 
-    if (!response.ok) {
-      throw new Error("Failed to load user");
-    }
+      if (!response.ok) {
+        throw new Error("Failed to load user");
+      }
 
-    const data = await response.json();
-    const userData = data.user || data;
-
-    // ✅ DEBUG logs (NOW SAFE)
-    console.log("User Data:", userData);
-    console.log("Avatar Path:", userData?.avatar);
-    console.log("Avatar URL:", getAvatarUrl(userData?.avatar));
-
-    // Store the latest version
-    updateLocalStorageAndContext(userData);
-
-    // Update form fields
-    setName(userData.name || "");
-    setEmail(userData.email || "");
-    setTelegramId(userData.telegram_id || "");
-    setGender(userData.gender || "");
-
-    // Set avatar preview with correct URL
-    const avatarUrl = getAvatarUrl(userData.avatar);
-    setAvatarPreview(avatarUrl);
-
-  } catch (err) {
-    console.error("Error loading user:", err);
-
-    // Fallback to localStorage
-    const storedUser = localStorage.getItem("user");
-
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-
-      setInitialUser(parsedUser);
-      setName(parsedUser.name || "");
-      setEmail(parsedUser.email || "");
-      setTelegramId(parsedUser.telegram_id || "");
-      setGender(parsedUser.gender || "");
-
-      const avatarUrl = getAvatarUrl(parsedUser.avatar);
+      const data = await response.json();
+      const userData = data.user || data;
+      
+      // Store the latest version
+      updateLocalStorageAndContext(userData);
+      
+      // Update form fields
+      setName(userData.name || "");
+      setEmail(userData.email || "");
+      setTelegramId(userData.telegram_id || "");
+      setGender(userData.gender || "");
+      
+      // Set avatar preview with correct URL
+      const avatarUrl = getAvatarUrl(userData.avatar);
       setAvatarPreview(avatarUrl);
-    } else {
-      router.push("/login");
+      
+    } catch (err) {
+      console.error("Error loading user:", err);
+      // Fallback to localStorage
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        setInitialUser(parsedUser);
+        setName(parsedUser.name || "");
+        setEmail(parsedUser.email || "");
+        setTelegramId(parsedUser.telegram_id || "");
+        setGender(parsedUser.gender || "");
+        const avatarUrl = getAvatarUrl(parsedUser.avatar);
+        setAvatarPreview(avatarUrl);
+      } else {
+        router.push("/login");
+      }
+    } finally {
+      setIsLoading(false);
     }
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   useEffect(() => {
     loadUser();
@@ -310,10 +298,10 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0a2a2b] to-[#0d3537] flex items-center justify-center">
+      <div className="min-h-screen bg-[#0a2a2b] flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-          <p className="text-emerald-300/70">Loading profile...</p>
+          <Loader2 className="w-16 h-16 text-[#235347] animate-spin mx-auto mb-4" />
+          <p className="text-[#8EB69B]">Loading profile...</p>
         </div>
       </div>
     );
@@ -324,17 +312,17 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a2a2b] to-[#0d3537] py-8 px-4">
+    <div className="min-h-screen bg-[#0a2a2b] py-8 px-4">
       {/* Logout Confirmation Modal */}
       {showLogoutConfirm && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#051F20] rounded-2xl shadow-2xl p-8 max-w-md w-full border border-emerald-500/30 animate-fade-in">
+          <div className="bg-[#051F20] rounded-2xl shadow-2xl p-8 max-w-md w-full border border-[#235347]/30">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <LogOut className="text-rose-400" size={32} />
+              <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <LogOut className="text-red-400" size={32} />
               </div>
               <h3 className="text-xl font-bold text-white mb-2">Sign Out</h3>
-              <p className="text-emerald-300/70">Are you sure you want to sign out?</p>
+              <p className="text-[#8EB69B]">Are you sure you want to sign out?</p>
             </div>
             <div className="flex gap-3">
               <button
@@ -345,7 +333,7 @@ export default function ProfilePage() {
               </button>
               <button
                 onClick={handleSignOut}
-                className="flex-1 py-3 bg-gradient-to-r from-rose-500 to-rose-600 text-white rounded-xl font-medium hover:from-rose-600 hover:to-rose-700 transition"
+                className="flex-1 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl font-medium hover:from-red-600 hover:to-red-700 transition"
               >
                 Yes, Sign Out
               </button>
@@ -359,21 +347,21 @@ export default function ProfilePage() {
         <div className="mb-8 flex items-center justify-between">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-emerald-300/70 hover:text-emerald-400 transition-colors group"
+            className="flex items-center gap-2 text-[#8EB69B] hover:text-[#DAF1DE] transition-colors group"
           >
             <ChevronLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
             <span>Back to Dashboard</span>
           </button>
           <div className="flex items-center gap-4">
             {saveSuccess && !showLogoutConfirm && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl animate-fade-in">
+              <div className="flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/30 text-green-400 rounded-lg animate-fade-in">
                 <CheckCircle size={18} />
                 <span className="font-medium">Saved!</span>
               </div>
             )}
             <button
               onClick={confirmSignOut}
-              className="flex items-center gap-2 px-4 py-2 bg-rose-500/10 border border-rose-500/30 text-rose-400 rounded-xl hover:bg-rose-500/20 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl hover:bg-red-500/20 transition-colors"
             >
               <LogOut size={18} />
               <span>Sign Out</span>
@@ -383,20 +371,20 @@ export default function ProfilePage() {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl flex items-center gap-3 animate-fade-in">
-            <AlertCircle className="text-rose-400" size={24} />
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-3 animate-fade-in">
+            <AlertCircle className="text-red-400" size={24} />
             <div>
-              <span className="text-rose-400 font-medium">Error</span>
-              <p className="text-rose-300 text-sm mt-1">{error}</p>
+              <span className="text-red-400 font-medium">Error</span>
+              <p className="text-red-300 text-sm mt-1">{error}</p>
             </div>
           </div>
         )}
 
         <div className="grid md:grid-cols-3 gap-8">
           {/* Avatar & Info */}
-          <div className="md:col-span-1 bg-[#051F20] rounded-2xl shadow-2xl p-6 sticky top-8 border border-emerald-500/30">
+          <div className="md:col-span-1 bg-[#051F20] rounded-2xl shadow-lg p-6 sticky top-8 border border-[#235347]/30">
             <div className="text-center mb-6 relative">
-              <div className="relative w-48 h-48 mx-auto rounded-full overflow-hidden border-4 border-emerald-500 shadow-xl group">
+              <div className="relative w-48 h-48 mx-auto rounded-full overflow-hidden border-4 border-[#235347] shadow-xl group">
                 <img 
                   src={avatarPreview} 
                   alt="Profile" 
@@ -423,12 +411,6 @@ export default function ProfilePage() {
                 ref={fileInputRef} 
                 onChange={handleFileChange} 
               />
-              
-              {/* Admin Badge */}
-              <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full">
-                <Shield size={14} className="text-purple-400" />
-                <span className="text-purple-400 text-xs font-semibold uppercase">Administrator</span>
-              </div>
             </div>
 
             {avatarFile && (
@@ -436,7 +418,7 @@ export default function ProfilePage() {
                 <button
                   onClick={handleAvatarUpload}
                   disabled={isUploadingAvatar}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-xl font-semibold hover:scale-[1.02] transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full py-3 px-4 bg-gradient-to-r from-[#235347] to-[#1a3f35] text-white rounded-xl font-semibold hover:scale-[1.02] transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {isUploadingAvatar ? (
                     <>
@@ -450,117 +432,106 @@ export default function ProfilePage() {
                     </>
                   )}
                 </button>
-                <p className="text-sm text-emerald-300/70 text-center truncate">
+                <p className="text-sm text-[#8EB69B] text-center truncate">
                   Selected: {avatarFile.name}
                 </p>
               </div>
             )}
 
-            {/* Account Info */}
-            <div className="mt-8 pt-8 border-t border-emerald-500/30 space-y-4">
-              <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-[#0a2a2b] to-transparent rounded-lg">
-                <User size={20} className="text-emerald-400" />
+            {/* Account Info - Shows latest stored data */}
+            <div className="mt-8 pt-8 border-t border-[#235347]/30 space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-[#0a2a2b] rounded-lg">
+                <User size={20} className="text-[#8EB69B]" />
                 <div>
-                  <p className="text-sm text-emerald-300/70">Name</p>
+                  <p className="text-sm text-[#8EB69B]">Name</p>
                   <p className="font-medium text-white">{initialUser?.name || "Not set"}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-[#0a2a2b] to-transparent rounded-lg">
-                <Mail size={20} className="text-emerald-400" />
+              <div className="flex items-center gap-3 p-3 bg-[#0a2a2b] rounded-lg">
+                <Mail size={20} className="text-[#8EB69B]" />
                 <div>
-                  <p className="text-sm text-emerald-300/70">Email</p>
+                  <p className="text-sm text-[#8EB69B]">Email</p>
                   <p className="font-medium text-white break-all">{initialUser?.email || "Not set"}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-[#0a2a2b] to-transparent rounded-lg">
-                <MessageCircle size={20} className="text-emerald-400" />
+              <div className="flex items-center gap-3 p-3 bg-[#0a2a2b] rounded-lg">
+                <MessageCircle size={20} className="text-[#8EB69B]" />
                 <div>
-                  <p className="text-sm text-emerald-300/70">Telegram ID</p>
+                  <p className="text-sm text-[#8EB69B]">Telegram ID</p>
                   <p className="font-medium text-white break-all">{initialUser?.telegram_id || "Not set"}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-[#0a2a2b] to-transparent rounded-lg">
-                <UserCircle size={20} className="text-emerald-400" />
+              <div className="flex items-center gap-3 p-3 bg-[#0a2a2b] rounded-lg">
+                <UserCircle size={20} className="text-[#8EB69B]" />
                 <div>
-                  <p className="text-sm text-emerald-300/70">Gender</p>
+                  <p className="text-sm text-[#8EB69B]">Gender</p>
                   <p className="font-medium text-white capitalize">{initialUser?.gender || "Not specified"}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-[#0a2a2b] to-transparent rounded-lg">
-                <Calendar size={20} className="text-emerald-400" />
-                <div>
-                  <p className="text-sm text-emerald-300/70">Member Since</p>
-                  <p className="font-medium text-white">
-                    {initialUser?.created_at ? new Date(initialUser.created_at).toLocaleDateString() : "N/A"}
-                  </p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Profile Form */}
-          <div className="md:col-span-2 bg-[#051F20] rounded-2xl shadow-2xl p-8 border border-emerald-500/30">
+          <div className="md:col-span-2 bg-[#051F20] rounded-2xl shadow-lg p-8 border border-[#235347]/30">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-emerald-300 bg-clip-text text-transparent">
-                Edit Profile
-              </h2>
-              <p className="text-emerald-300/70 mt-2">Update your personal information</p>
+              <h2 className="text-2xl font-bold text-white">Edit Profile</h2>
+              <p className="text-[#8EB69B] mt-2">Update your personal information</p>
             </div>
 
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-emerald-300/70 mb-2 flex items-center gap-2">
-                  <User size={16} className="text-emerald-400" />
+                <label className="block text-sm font-medium text-[#8EB69B] mb-2 flex items-center gap-2">
+                  <User size={16} className="text-[#8EB69B]" />
                   Full Name
                 </label>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full p-4 bg-[#0a2a2b] border border-emerald-500/30 rounded-xl text-white placeholder-emerald-300/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                  className="w-full p-4 bg-[#0a2a2b] border border-[#235347]/40 rounded-xl text-white placeholder-[#8EB69B] focus:outline-none focus:ring-2 focus:ring-[#235347] focus:border-transparent transition"
                   placeholder="Enter your full name"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-emerald-300/70 mb-2 flex items-center gap-2">
-                  <Mail size={16} className="text-emerald-400" />
+                <label className="block text-sm font-medium text-[#8EB69B] mb-2 flex items-center gap-2">
+                  <Mail size={16} className="text-[#8EB69B]" />
                   Email Address
                 </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full p-4 bg-[#0a2a2b] border border-emerald-500/30 rounded-xl text-white placeholder-emerald-300/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                  className="w-full p-4 bg-[#0a2a2b] border border-[#235347]/40 rounded-xl text-white placeholder-[#8EB69B] focus:outline-none focus:ring-2 focus:ring-[#235347] focus:border-transparent transition"
                   placeholder="Enter your email address"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-emerald-300/70 mb-2 flex items-center gap-2">
-                  <MessageCircle size={16} className="text-emerald-400" />
+                <label className="block text-sm font-medium text-[#8EB69B] mb-2 flex items-center gap-2">
+                  <MessageCircle size={16} className="text-[#8EB69B]" />
                   Telegram ID
                 </label>
                 <input
                   type="text"
                   value={telegramId}
                   onChange={(e) => setTelegramId(e.target.value)}
-                  className="w-full p-4 bg-[#0a2a2b] border border-emerald-500/30 rounded-xl text-white placeholder-emerald-300/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                  className="w-full p-4 bg-[#0a2a2b] border border-[#235347]/40 rounded-xl text-white placeholder-[#8EB69B] focus:outline-none focus:ring-2 focus:ring-[#235347] focus:border-transparent transition"
                   placeholder="@username or telegram ID"
                 />
-                <p className="text-sm text-emerald-300/70 mt-2">
+                <p className="text-sm text-[#8EB69B] mt-2">
                   Your Telegram username for direct chat notifications
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-emerald-300/70 mb-2 flex items-center gap-2">
-                  <UserCircle size={16} className="text-emerald-400" />
+                <label className="block text-sm font-medium text-[#8EB69B] mb-2 flex items-center gap-2">
+                  <UserCircle size={16} className="text-[#8EB69B]" />
                   Gender
                 </label>
                 <select
                   value={gender}
                   onChange={(e) => setGender(e.target.value)}
-                  className="w-full p-4 bg-[#0a2a2b] border border-emerald-500/30 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition appearance-none cursor-pointer"
+                  className="w-full p-4 bg-[#0a2a2b] border border-[#235347]/40 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-[#235347] focus:border-transparent transition appearance-none cursor-pointer"
                 >
                   <option value="">Select your gender</option>
                   <option value="male">Male</option>
@@ -568,29 +539,11 @@ export default function ProfilePage() {
                 </select>
               </div>
 
-              {/* Admin Stats Card */}
-              <div className="bg-gradient-to-r from-[#0a2a2b] to-[#0d3537] rounded-xl p-4 border border-emerald-500/30">
-                <h4 className="text-sm font-semibold text-emerald-400 mb-3 flex items-center gap-2">
-                  <Shield size={16} />
-                  Admin Privileges
-                </h4>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="text-center p-2 bg-white/5 rounded-lg">
-                    <Building size={20} className="text-emerald-400 mx-auto mb-1" />
-                    <p className="text-xs text-emerald-300/70">Manage Properties</p>
-                  </div>
-                  <div className="text-center p-2 bg-white/5 rounded-lg">
-                    <Key size={20} className="text-emerald-400 mx-auto mb-1" />
-                    <p className="text-xs text-emerald-300/70">Full Access</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-6 border-t border-emerald-500/30">
+              <div className="pt-6 border-t border-[#235347]/30">
                 <button
                   onClick={handleProfileUpdate}
                   disabled={isSaving}
-                  className="w-full py-4 px-6 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-xl font-semibold hover:scale-[1.02] transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full py-4 px-6 bg-gradient-to-r from-[#235347] to-[#1a3f35] text-white rounded-xl font-semibold hover:scale-[1.02] transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {isSaving ? (
                     <>
