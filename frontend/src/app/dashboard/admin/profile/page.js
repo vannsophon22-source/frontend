@@ -20,7 +20,6 @@ import {
 import { useRouter } from "next/navigation";
 import { useUser } from "@/context/UserContext";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -44,19 +43,16 @@ export default function ProfilePage() {
 
   // Helper function to get correct avatar URL
   const getAvatarUrl = (avatarPath) => {
-    if (!avatarPath) return "/users/default-avatar.svg";
-    
-    // If it's already a full URL
-    if (avatarPath.startsWith('http')) return avatarPath;
-    
-    // If it's a path from storage
-    if (avatarPath.includes('avatars/')) {
-      return `http://127.0.0.1:8000/storage/${avatarPath}`;
-    }
-    
-    // Default fallback
-    return "/users/default-avatar.svg";
-  };
+  if (!avatarPath) return "/users/default-avatar.svg";
+
+  if (avatarPath.startsWith("http")) {
+    return avatarPath;
+  }
+
+  const BASE_URL = process.env.NEXT_PUBLIC_API_URL.replace("/api", "");
+
+  return `${BASE_URL}/storage/${avatarPath}`;
+};
 
   // Get auth token
   const getToken = () => {
@@ -90,60 +86,69 @@ export default function ProfilePage() {
 
   // Load user from backend using /api/user endpoint
   const loadUser = async () => {
-    try {
-      const token = getToken();
-      if (!token) {
-        router.push("/login");
-        return;
-      }
-
-      const response = await fetch(`${API_URL}/user`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to load user");
-      }
-
-      const data = await response.json();
-      const userData = data.user || data;
-      
-      // Store the latest version
-      updateLocalStorageAndContext(userData);
-      
-      // Update form fields
-      setName(userData.name || "");
-      setEmail(userData.email || "");
-      setTelegramId(userData.telegram_id || "");
-      setGender(userData.gender || "");
-      
-      // Set avatar preview with correct URL
-      const avatarUrl = getAvatarUrl(userData.avatar);
-      setAvatarPreview(avatarUrl);
-      
-    } catch (err) {
-      console.error("Error loading user:", err);
-      // Fallback to localStorage
-      const storedUser = localStorage.getItem("user");
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        setInitialUser(parsedUser);
-        setName(parsedUser.name || "");
-        setEmail(parsedUser.email || "");
-        setTelegramId(parsedUser.telegram_id || "");
-        setGender(parsedUser.gender || "");
-        const avatarUrl = getAvatarUrl(parsedUser.avatar);
-        setAvatarPreview(avatarUrl);
-      } else {
-        router.push("/login");
-      }
-    } finally {
-      setIsLoading(false);
+  try {
+    const token = getToken();
+    if (!token) {
+      router.push("/login");
+      return;
     }
-  };
+
+    const response = await fetch(`${API_URL}/user`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to load user");
+    }
+
+    const data = await response.json();
+    const userData = data.user || data;
+
+    // ✅ DEBUG logs (NOW SAFE)
+    console.log("User Data:", userData);
+    console.log("Avatar Path:", userData?.avatar);
+    console.log("Avatar URL:", getAvatarUrl(userData?.avatar));
+
+    // Store the latest version
+    updateLocalStorageAndContext(userData);
+
+    // Update form fields
+    setName(userData.name || "");
+    setEmail(userData.email || "");
+    setTelegramId(userData.telegram_id || "");
+    setGender(userData.gender || "");
+
+    // Set avatar preview with correct URL
+    const avatarUrl = getAvatarUrl(userData.avatar);
+    setAvatarPreview(avatarUrl);
+
+  } catch (err) {
+    console.error("Error loading user:", err);
+
+    // Fallback to localStorage
+    const storedUser = localStorage.getItem("user");
+
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+
+      setInitialUser(parsedUser);
+      setName(parsedUser.name || "");
+      setEmail(parsedUser.email || "");
+      setTelegramId(parsedUser.telegram_id || "");
+      setGender(parsedUser.gender || "");
+
+      const avatarUrl = getAvatarUrl(parsedUser.avatar);
+      setAvatarPreview(avatarUrl);
+    } else {
+      router.push("/login");
+    }
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   useEffect(() => {
     loadUser();
