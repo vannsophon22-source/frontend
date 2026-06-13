@@ -8,19 +8,21 @@ const occupancyStatuses = ["available", "occupied", "maintenance", "cleaning"];
 
 export default function RoomForm({ initialData, onSubmit, isLoading, error }) {
   const [form, setForm] = useState({
-    name: initialData?.name || "",
-    room_number: initialData?.room_number || "",
-    type: initialData?.type || "Single",
-    monthly_rent: initialData?.monthly_rent || "",
-    beds: initialData?.beds || 1,
-    baths: initialData?.baths || 1,
-    size: initialData?.size || "",
-    description: initialData?.description || "",
-    location: initialData?.location || "",
-    contact_email: initialData?.contact_email || "",
-    amenities: initialData?.amenities || [],
-    occupancy_status: initialData?.occupancy_status || "available",
-  });
+  name: initialData?.name || "",
+  room_number: initialData?.room_number || "",
+  type: initialData?.type || "Single",
+  monthly_rent: initialData?.monthly_rent || "",
+  beds: initialData?.beds || 1,
+  baths: initialData?.baths || 1,
+  size: initialData?.size || "",
+  description: initialData?.description || "",
+  location: initialData?.location || "",
+  contact_email: initialData?.contact_email || "",
+  amenities: initialData?.amenities || [],
+
+  // ✅ FIXED FIELD (backend expects this)
+  status: initialData?.status || "available",
+});
 
   const [amenityInput, setAmenityInput] = useState("");
 
@@ -50,11 +52,13 @@ export default function RoomForm({ initialData, onSubmit, isLoading, error }) {
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    // IMPORTANT: send ONLY occupancy_status (no "status", no "available")
-    onSubmit(form);
-  };
+  onSubmit({
+    ...form,
+    status: form.status, // backend ONLY uses this
+  });
+};
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -110,16 +114,16 @@ export default function RoomForm({ initialData, onSubmit, isLoading, error }) {
       <textarea name="description" value={form.description} onChange={handleChange} className="input" />
 
       {/* OCCUPANCY STATUS (IMPORTANT PART) */}
-      <select
-        name="occupancy_status"
-        value={form.occupancy_status}
-        onChange={handleChange}
-        className="input"
-      >
-        {occupancyStatuses.map(s => (
-          <option key={s} value={s}>{s}</option>
-        ))}
-      </select>
+     <select
+  name="status"
+  value={form.status}
+  onChange={handleChange}
+  className="input"
+>
+  {["available", "unavailable"].map(s => (
+    <option key={s} value={s}>{s}</option>
+  ))}
+</select>
 
       {/* AMENITIES */}
       <div>
