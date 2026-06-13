@@ -14,29 +14,36 @@ export default function RoomCard({ room, property }) {
 
   const price = Number(room.price ?? 0);
   const title = room.tittle || "Untitled Room";
-
+  
   // ===============================
   // REAL AVAILABILITY CHECK (IMPORTANT)
   // ===============================
   useEffect(() => {
-    const fetchAvailability = async () => {
-      try {
-        const res = await fetch(
-  `https://backend-production-ac2f.up.railway.app/api/units/${room.id}/availability`
-);
+  const fetchAvailability = async () => {
+    try {
+      const res = await fetch(
+        `https://backend-production-ac2f.up.railway.app/api/units/${room.id}/availability`
+      );
 
-        const data = await res.json();
-        setAvailable(data.available);
-      } catch (err) {
-        // fallback safe mode (avoid false available)
-        setAvailable(false);
-      } finally {
-        setLoadingAvailability(false);
-      }
-    };
+      const data = await res.json();
 
-    if (room?.id) fetchAvailability();
-  }, [room?.id]);
+      console.log("Room ID:", room.id);
+      console.log("Room status from homepage:", room.status);
+      console.log("API availability response:", data);
+
+      setAvailable(Boolean(data.available));
+    } catch (err) {
+      console.error("Availability Error:", err);
+      setAvailable(false);
+    } finally {
+      setLoadingAvailability(false);
+    }
+  };
+
+  if (room?.id) {
+    fetchAvailability();
+  }
+}, [room?.id]);
 
   const isUnavailable = !available;
 
