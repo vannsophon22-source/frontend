@@ -4,7 +4,7 @@ import { useState } from "react";
 import { FaBed, FaBath, FaDollarSign, FaMapMarkerAlt, FaEnvelope, FaRuler, FaTag, FaInfoCircle } from "react-icons/fa";
 
 const roomTypes = ["Single", "Double", "Studio", "Suite", "Shared", "Dormitory"];
-const occupancyStatuses = ["available", "occupied", "maintenance", "cleaning"];
+const statuses = ["available", "occupied"];
 
 export default function RoomForm({ initialData, onSubmit, isLoading, error }) {
   const [form, setForm] = useState({
@@ -19,7 +19,7 @@ export default function RoomForm({ initialData, onSubmit, isLoading, error }) {
     location: initialData?.location || "",
     contact_email: initialData?.contact_email || "",
     amenities: initialData?.amenities || [],
-    occupancy_status: initialData?.occupancy_status || "available",
+    status: initialData?.status || "available",
   });
 
   const [amenityInput, setAmenityInput] = useState("");
