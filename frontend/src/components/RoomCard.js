@@ -28,8 +28,6 @@ setAvailable(isAvailable);
 
       const data = await res.json();
 
-      console.log("API RESPONSE:", data);
-
       const isAvailable =
         data.available === true ||
         data.available === 1 ||
@@ -48,7 +46,6 @@ setAvailable(isAvailable);
 
   if (room?.id) fetchAvailability();
 }, [room?.id]);
-
   const isUnavailable = !available;
 
   return (
